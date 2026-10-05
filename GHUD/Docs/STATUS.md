@@ -19,6 +19,31 @@ Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared downloa
   (plugins, FOMOD), S.T.A.L.K.E.R. Anomaly. Mount & Blade only if wanted later.
 - The RimWorld Mod Manager (v3) stays as it is.
 
+## Decisions (round 2)
+- **Profiles:** each instance can have several profiles (e.g. "Vanilla+", "Testing"). One
+  shared staging folder per instance; each profile has its own on/off choices and order.
+  Switching profile = redeploy.
+- **Staging location:** automatic, on the game's drive (`<drive>\GHUD Staging\<instance>`),
+  so hard links always work; shown and changeable in the instance settings.
+- **Existing mods:** when a game already has mods (by hand, Vortex, MO2), GHUD lists them
+  and offers to adopt the chosen ones into staging (tagged Manual); the rest are shown as
+  "not managed" and never touched.
+- **Download library:** every downloaded archive is kept, so mods can be reinstalled or
+  rolled back; old versions can be cleaned up after N days.
+
+## Decisions (round 3)
+- **Window:** a home screen of game icons, like a desktop: click a game to open its own
+  mod screen. A new icon appears as each game module is built; "+" adds a game (General
+  or a detected install). Each module can add its own panels (load order, plugins, ...).
+- **Downloads:** up to 3 at once (adjustable), resuming interrupted downloads where the
+  site allows it.
+- **Nexus links (`nxm://`):** GHUD owns them and installs into the matching game instance
+  (the game is part of the link). The RimWorld manager stops registering for them.
+- **Download library:** next to staging, `<drive>\GHUD Staging\<instance>\downloads`.
+- **Own repository:** when GHUD is ready it moves to its own GitHub repository, separate
+  from the RimWorld Mod Manager. `Shared\` (DownloadKit) then needs a home both can use;
+  see open questions.
+
 ## Core (`src\Ghud.Core`)
 - `GameModule.cs`: `IGameModule` (Nexus game name, Steam app ID, deploy folder, how to find
   mods in an archive, load-order kind). Modules: `RimWorldModule` (About/About.xml →
@@ -57,6 +82,9 @@ Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared downloa
 7. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
 
 ## Open questions
+- When GHUD gets its own repository: move `Shared\` (DownloadKit) into it (GHUD is where
+  new work happens) and give the RimWorld manager its own frozen copy? Or publish
+  DownloadKit as a package both use?
 - Default download folder; resume interrupted downloads; downloads in parallel.
 - `nxm://` links open only one program: GHUD or the RimWorld manager?
 - Hard links need staging on the game's drive: pick the staging folder automatically per
