@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ghud.Core/Ghud.Core.csproj" />
+    <Project Path="../Shared/src/DownloadKit.Core/DownloadKit.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ghud.Tests/Ghud.Tests.csproj" />
+  </Folder>
+</Solution>

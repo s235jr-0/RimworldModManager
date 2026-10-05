@@ -76,7 +76,7 @@
 
 ## Layout
 The download / archive / file-safety / log / colour-scheme code lives in the shared
-library `..\Shared\src\DownloadKit.Core` (also used by the Universal Downloader);
+library `..\Shared\src\DownloadKit.Core` (also used by G.H.U.D.);
 `Core` keeps everything RimWorld-specific (About.xml, installer, session, Steam state).
 
 ```

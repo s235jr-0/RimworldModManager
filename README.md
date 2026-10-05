@@ -12,11 +12,13 @@ Mod Manager v3/                     RimWorld Mod Manager: Windows + Linux, .NET 
 ├─ BUILD.bat / build.sh             Tests + single-file build into publish/
 └─ Docs/                            README (user guide) + STATUS
 
-Shared/                             DownloadKit: download code shared by both apps
+Shared/                             DownloadKit: download code shared by both apps (RimWorld manager + GHUD)
 └─ src/DownloadKit.Core/            Links, GitHub/GitLab/Nexus, file hosts, archives, logging
 
-Universal Downloader/               Sister project (planned): download manager + game profiles
-└─ Docs/STATUS.md                   Plan and roadmap
+GHUD/                               G.H.U.D.: modular mod manager for any game (in progress)
+├─ src/Ghud.Core/                   Instances, game modules, staging, deploy (hard links), load order
+├─ tests/                           Automated tests (run: dotnet test)
+└─ Docs/STATUS.md                   Plan, decisions and roadmap
 
 Mods/                               Small mods, one folder each
 ├─ Rimatomics Diplomatic Credit/

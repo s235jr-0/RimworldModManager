@@ -1,6 +1,6 @@
 # Shared (DownloadKit)
 
-Code used by both the RimWorld Mod Manager and the Universal Downloader.
+Code used by both the RimWorld Mod Manager and G.H.U.D.
 
 - `src/DownloadKit.Core`: link sorting, HTTP downloads, GitHub / GitLab / Nexus (any
   game), MEGA / MediaFire / Google Drive / Dropbox, archives (zip / 7z / rar / tar,

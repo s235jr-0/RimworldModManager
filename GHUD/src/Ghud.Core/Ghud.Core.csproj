@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- G.H.U.D. core: game instances, game modules, staging, deploying
+       (hard links / copies), load order and conflicts. No UI. -->
+  <PropertyGroup>
+    <RootNamespace>Ghud</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ghud.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\src\DownloadKit.Core\DownloadKit.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="DownloadKit" />
+    <Using Include="DownloadKit.Sources" />
+  </ItemGroup>
+
+</Project>
