@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Download and file code shared by the RimWorld Mod Manager and the
-       G.H.U.D.: link sorting, GitHub / GitLab / Nexus, file hosts
+  <!-- G.H.U.D.'s download and file library: link sorting, GitHub / GitLab / Nexus, file hosts
        (MEGA, MediaFire, Drive, Dropbox), archives, link-safe file operations,
        logging and colour schemes. Nothing game-specific; no UI. -->
   <PropertyGroup>
@@ -9,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="RimModManager.Tests" />
     <InternalsVisibleTo Include="Ghud.Tests" />
   </ItemGroup>
 

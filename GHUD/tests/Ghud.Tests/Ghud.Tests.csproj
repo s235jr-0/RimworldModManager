@@ -20,4 +20,9 @@
     <Using Include="DownloadKit" />
   </ItemGroup>
 
+  <!-- Small sample archives (7z / rar) for the unpacking tests. -->
+  <ItemGroup>
+    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

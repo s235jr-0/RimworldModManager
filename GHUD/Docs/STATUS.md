@@ -2,9 +2,9 @@
 
 A modular mod manager: a rock-solid **core** that downloads, stages and deploys mods for
 any game, plus **game modules** that add each game's specifics. "General" covers games
-without a module (a niche or new game with a mods folder). Same stack as the RimWorld
-Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared download code
-(`..\..\Shared\`, DownloadKit).
+without a module (a niche or new game with a mods folder). GHUD is the parent app: the
+RimWorld Mod Manager's features become its RimWorld module. .NET 10 + Avalonia 12,
+Windows + Linux. Self-contained in this folder, ready to move to its own repository.
 
 **Current version:** 0.1.0, core library only (no window yet).
 
@@ -41,8 +41,18 @@ Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared downloa
   (the game is part of the link). The RimWorld manager stops registering for them.
 - **Download library:** next to staging, `<drive>\GHUD Staging\<instance>\downloads`.
 - **Own repository:** when GHUD is ready it moves to its own GitHub repository, separate
-  from the RimWorld Mod Manager. `Shared\` (DownloadKit) then needs a home both can use;
-  see open questions.
+  from the RimWorld Mod Manager. DownloadKit lives here (`src\DownloadKit.Core`); the
+  RimWorld manager keeps its own frozen copy. Everything GHUD needs is inside this folder.
+
+## Layout
+```
+GHUD\
+  src\DownloadKit.Core\  downloads, link sorting, GitHub / GitLab / Nexus (any game),
+                         MEGA / MediaFire / Drive / Dropbox, archives, Downloads watcher,
+                         link-safe file operations, logging, colour schemes. No UI.
+  src\Ghud.Core\         instances, game modules, staging, deploying, load order
+  tests\Ghud.Tests\      tests for both (dotnet test in this folder)
+```
 
 ## Core (`src\Ghud.Core`)
 - `GameModule.cs`: `IGameModule` (Nexus game name, Steam app ID, deploy folder, how to find
@@ -68,12 +78,12 @@ Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared downloa
   in staging not followed.
 
 ## Roadmap
-1. ✅ Shared DownloadKit library (downloads, sources, archives, logs, colour schemes).
+1. ✅ DownloadKit library (downloads, sources, archives, logs, colour schemes).
 2. ✅ Core: instances, modules, staging, deployer, load order by priority, conflicts.
 3. Window: instance picker, mod list (drag to reorder, on/off, source tags, conflicts),
    install from links / files (DownloadKit), Deploy / Undeploy, Accounts, Log, Appearance.
-   Needs the shared UI pieces from the RimWorld manager (colour schemes, dialogs, saved
-   accounts) moved into a `DownloadKit.Ui` library.
+   Reuses UI pieces from the RimWorld manager (colour schemes, dialogs, saved accounts)
+   as a `DownloadKit.Ui` library here.
 4. RimWorld instance extras: Steam Workshop through anonymous SteamCMD (move SteamCmd to
    DownloadKit), update checks per source, adopting mods already in the Mods folder.
 5. Download library: keep every downloaded archive for reinstall / rollback.
@@ -82,10 +92,5 @@ Mod Manager (.NET 10 + Avalonia 12, Windows + Linux) and the same shared downloa
 7. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
 
 ## Open questions
-- When GHUD gets its own repository: move `Shared\` (DownloadKit) into it (GHUD is where
-  new work happens) and give the RimWorld manager its own frozen copy? Or publish
-  DownloadKit as a package both use?
-- Default download folder; resume interrupted downloads; downloads in parallel.
-- `nxm://` links open only one program: GHUD or the RimWorld manager?
 - Hard links need staging on the game's drive: pick the staging folder automatically per
   drive, or ask when creating an instance?

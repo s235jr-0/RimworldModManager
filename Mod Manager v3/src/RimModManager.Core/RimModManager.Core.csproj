@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Downloads, archives, file safety, logging, colour schemes -->
-    <ProjectReference Include="..\..\..\Shared\src\DownloadKit.Core\DownloadKit.Core.csproj" />
+    <!-- Downloads, archives, file safety, logging, colour schemes (frozen copy of GHUD's DownloadKit) -->
+    <ProjectReference Include="..\DownloadKit.Core\DownloadKit.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

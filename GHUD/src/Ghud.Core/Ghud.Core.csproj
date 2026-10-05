@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\src\DownloadKit.Core\DownloadKit.Core.csproj" />
+    <ProjectReference Include="..\DownloadKit.Core\DownloadKit.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

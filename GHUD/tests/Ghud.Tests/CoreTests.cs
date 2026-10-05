@@ -5,14 +5,6 @@ using DownloadKit.Sources;
 
 namespace Ghud.Tests;
 
-public sealed class TempDir : IDisposable
-{
-    public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ghud_test_" + Guid.NewGuid().ToString("N")[..8]);
-    public TempDir() => Directory.CreateDirectory(Path);
-    public string Sub(params string[] parts) => System.IO.Path.Combine(new[] { Path }.Concat(parts).ToArray());
-    public void Dispose() { try { SafeFileSystem.DeleteDirectory(Path); } catch { } }
-}
-
 // A test game: instance + module + list + staging + deployer in a temp folder.
 internal sealed class World : IDisposable
 {

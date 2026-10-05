@@ -75,9 +75,11 @@
   - 24 unit tests for the store and mappings
 
 ## Layout
-The download / archive / file-safety / log / colour-scheme code lives in the shared
-library `..\Shared\src\DownloadKit.Core` (also used by G.H.U.D.);
-`Core` keeps everything RimWorld-specific (About.xml, installer, session, Steam state).
+The download / archive / file-safety / log / colour-scheme code is in
+`src\DownloadKit.Core`: a **frozen copy** of G.H.U.D.'s DownloadKit (`..\GHUD\`), where
+new work happens. `Core` keeps everything RimWorld-specific (About.xml, installer,
+session, Steam state). This app is finished and stand-alone; GHUD's RimWorld module is
+its successor.
 
 ```
 Mod Manager v3\
