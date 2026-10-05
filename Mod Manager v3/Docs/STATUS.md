@@ -1,10 +1,13 @@
 # RimWorld Mod Manager v3 — status
 
-**Current version:** v3.2.0
+**Current version:** v3.3.0
 - v3.0.0: rewrite of the Windows-only v2.3.0 (WinForms, now retired) in .NET 10 +
   Avalonia 12, to run on Windows and Linux. Same tabs, same behavior; SteamCMD anonymous-only.
 - v3.1.0: **colour schemes** (Appearance tab), described below.
 - v3.2.0: **mods from other sites** and **source tags**, described below.
+- v3.3.0: new cubist app icon (replaces the RimWorld storyteller art); Cleanup tab can
+  **zip backups to keep them permanently** (`Core/BackupArchive.cs` → `RWArchive`, with a
+  `modlist.txt`; links skipped; written to a `.partial` file first). 3 tests.
 
 ## Other sources (v3.2.0)
 - Core in `Core/Sources/`:
@@ -124,5 +127,5 @@ between them loses nothing.
 ## Next
 1. To test: Nexus key + *Handle Nexus links* with a free account, a LoversLab
    download, MEGA / MediaFire links.
-2. Later: tell scenarios apart from mods.
+2. Later: tell scenarios apart from mods; compare mod versions across kept backups.
 3. Test on Linux (install WSL, or on a Linux machine): `./build.sh`, then the app.

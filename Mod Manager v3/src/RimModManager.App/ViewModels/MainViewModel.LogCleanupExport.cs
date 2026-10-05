@@ -98,15 +98,105 @@ public partial class MainViewModel
         int days = Days;
         bool backups = CleanupBackups, cache = CleanupCache;
         Cleanup.Plan? plan = null;
+        List<BackupArchive.BackupFolder> found = new();
 
         await RunAsync(
-            () => plan = _cleanup.BuildPlan(modsRoot, days, backups, cache, SetStatus),
+            () =>
+            {
+                plan = _cleanup.BuildPlan(modsRoot, days, backups, cache, SetStatus);
+                found = BackupArchive.ListBackups(modsRoot);
+            },
             () =>
             {
                 CleanupInfo = Cleanup.Describe(plan!);
+                ShowBackups(found);
                 SetStatus("Cleanup sizes updated.");
                 return Task.CompletedTask;
             });
+    }
+
+    // ---------------- Keep backups permanently ----------------
+
+    public ObservableCollection<BackupItem> Backups { get; } = new();
+
+    [ObservableProperty]
+    public partial bool DeleteBackupAfterArchiving { get; set; }
+
+    [ObservableProperty]
+    public partial string ArchiveInfo { get; set; } = "";
+
+    private void ShowBackups(List<BackupArchive.BackupFolder> found)
+    {
+        Backups.Clear();
+        foreach (BackupArchive.BackupFolder b in found)
+            Backups.Add(new BackupItem(b));
+
+        string modsRoot = Normalize(ModsFolder);
+        ArchiveInfo = String.IsNullOrWhiteSpace(modsRoot) || !Directory.Exists(modsRoot)
+            ? "Choose your Mods folder first."
+            : "Zips go to " + BackupArchive.ArchiveRootFor(modsRoot) + " and are never cleaned up." +
+              (found.Count == 0 ? " No dated backups right now." : "");
+    }
+
+    [RelayCommand]
+    private async Task ArchiveSelectedBackups()
+    {
+        List<BackupArchive.BackupFolder> chosen = Backups.Where(b => b.Selected).Select(b => b.Folder).ToList();
+        if (chosen.Count == 0)
+        {
+            await _dialogs.Info("Tick the backups to keep first (press \"Refresh sizes\" to list them).");
+            return;
+        }
+
+        string modsRoot = Normalize(ModsFolder);
+        string root = BackupArchive.ArchiveRootFor(modsRoot);
+        bool deleteAfter = DeleteBackupAfterArchiving;
+        BackupArchive archive = new(_log);
+        List<string> made = new();
+        List<string> failed = new();
+        List<BackupArchive.BackupFolder> found = new();
+
+        await RunAsync(
+            () =>
+            {
+                foreach (BackupArchive.BackupFolder b in chosen)
+                {
+                    try { made.Add(archive.Archive(b, root, deleteAfter, SetStatus)); }
+                    catch (Exception ex)
+                    {
+                        failed.Add(Path.GetFileName(b.Path) + ": " + ex.Message);
+                        _log.Add("ERROR", "Could not archive " + b.Path + ": " + ex.Message);
+                    }
+                }
+                found = BackupArchive.ListBackups(modsRoot);
+            },
+            async () =>
+            {
+                ShowBackups(found);
+                string text = made.Count + " backup(s) zipped into " + root + "." +
+                              (deleteAfter && made.Count > 0 ? " The original folders were removed." : "");
+                SetStatus(text);
+                if (failed.Count > 0)
+                    await _dialogs.Warning(text + Environment.NewLine + Environment.NewLine + "Failed:" + Environment.NewLine +
+                                           String.Join(Environment.NewLine, failed));
+                else
+                    await _dialogs.Info(text);
+            });
+    }
+
+    [RelayCommand]
+    private async Task OpenArchiveFolder()
+    {
+        string modsRoot = Normalize(ModsFolder);
+        if (String.IsNullOrWhiteSpace(modsRoot) || !Directory.Exists(modsRoot))
+        {
+            await _dialogs.Info("Choose your Mods folder first.");
+            return;
+        }
+
+        string root = BackupArchive.ArchiveRootFor(modsRoot);
+        Directory.CreateDirectory(root);
+        _dialogs.OpenInFileManager(root);
     }
 
     [RelayCommand]
@@ -204,4 +294,18 @@ public partial class MainViewModel
         await _dialogs.SetClipboardText(Exports.Links(Mods));
         SetStatus("Workshop links copied to clipboard.");
     }
+}
+
+// One dated backup folder in the Cleanup tab's "keep permanently" list.
+public sealed partial class BackupItem : ObservableObject
+{
+    public BackupItem(BackupArchive.BackupFolder folder) => Folder = folder;
+
+    public BackupArchive.BackupFolder Folder { get; }
+
+    [ObservableProperty]
+    public partial bool Selected { get; set; }
+
+    public string Text =>
+        Folder.Date.ToString("yyyy-MM-dd") + "   " + Folder.ModCount + " mod folder(s), " + Cleanup.FormatBytes(Folder.Bytes);
 }

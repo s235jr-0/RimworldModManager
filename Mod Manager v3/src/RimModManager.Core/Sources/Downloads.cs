@@ -110,7 +110,7 @@ public static class HttpDownloader
         {
             Timeout = TimeSpan.FromMinutes(30),
         };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("RimModManager/3.2");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("RimModManager/3.3");
         return http;
     }
 

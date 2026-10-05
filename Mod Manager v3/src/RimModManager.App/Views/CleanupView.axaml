@@ -4,7 +4,7 @@
              x:Class="RimModManager.App.Views.CleanupView"
              x:DataType="vm:MainViewModel">
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
 
     <TextBlock Grid.Row="0" Margin="0,0,0,6"
                Text="Frees disk space used by this manager. Installed mods in RimWorld's Mods folder are never touched." />
@@ -29,7 +29,28 @@
       <Button Content="Clean now..." Command="{Binding CleanNowCommand}" IsEnabled="{Binding IsNotBusy}" MinWidth="110" />
     </StackPanel>
 
-    <TextBox Grid.Row="6" Text="{Binding CleanupInfo}" IsReadOnly="True" AcceptsReturn="True"
+    <!-- Keep dated backups for good: zipped into RWArchive, which cleanup never touches -->
+    <Border Grid.Row="6" Padding="10,8" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource Theme.Border}">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Text="Keep backups permanently" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1" Text="{Binding ArchiveInfo}" TextWrapping="Wrap" Opacity="0.8" />
+        <ListBox Grid.Row="2" ItemsSource="{Binding Backups}" MaxHeight="150">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:BackupItem">
+              <CheckBox IsChecked="{Binding Selected}" Content="{Binding Text}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <WrapPanel Grid.Row="3" ItemSpacing="8" LineSpacing="6">
+          <Button Content="Zip selected &amp; keep" Command="{Binding ArchiveSelectedBackupsCommand}" IsEnabled="{Binding IsNotBusy}"
+                  ToolTip.Tip="Each backup becomes one .zip with a modlist.txt inside, stored where cleanup never deletes anything." />
+          <CheckBox Content="Delete the backup folder after zipping" IsChecked="{Binding DeleteBackupAfterArchiving}" />
+          <Button Content="Open archive folder" Command="{Binding OpenArchiveFolderCommand}" />
+        </WrapPanel>
+      </Grid>
+    </Border>
+
+    <TextBox Grid.Row="7" MinHeight="120" Text="{Binding CleanupInfo}" IsReadOnly="True" AcceptsReturn="True"
              FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
   </Grid>
 

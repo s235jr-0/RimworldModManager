@@ -5,7 +5,7 @@
         x:Class="RimModManager.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding Title}"
-        Icon="/Assets/RandyRandom.ico"
+        Icon="/Assets/AppIcon.ico"
         Width="1040" Height="700" MinWidth="900" MinHeight="620"
         WindowStartupLocation="CenterScreen">
 

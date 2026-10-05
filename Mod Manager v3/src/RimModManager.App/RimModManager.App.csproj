@@ -5,7 +5,7 @@
     <OutputType>WinExe</OutputType>
     <AssemblyName>RimModManager</AssemblyName>
     <RootNamespace>RimModManager.App</RootNamespace>
-    <ApplicationIcon>Assets\RandyRandom.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 

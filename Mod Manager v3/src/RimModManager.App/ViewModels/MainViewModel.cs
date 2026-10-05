@@ -12,7 +12,7 @@ namespace RimModManager.App.ViewModels;
 // MainViewModel.<Tab>.cs file; they all bind to this one object.
 public partial class MainViewModel : ObservableObject
 {
-    public const string AppTitle = "RimWorld Mod Manager v3.2.0";
+    public const string AppTitle = "RimWorld Mod Manager v3.3.0";
 
     private readonly IDialogs _dialogs;
     private readonly StateStore _state;

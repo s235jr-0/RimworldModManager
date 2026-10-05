@@ -39,6 +39,8 @@ Building needs the .NET 10 SDK (`winget install Microsoft.DotNet.SDK.10` on Wind
   with your account name removed from paths.
 - **Manager Log:** colored history of everything the manager did today.
 - **Cleanup:** deletes old dated backups and/or cached downloads older than N days.
+  *Keep backups permanently* zips chosen backups (with a `modlist.txt` inside) into
+  `RWArchive` next to the backups; cleanup never deletes anything there.
 - **Export:** your mod list as TXT, CSV or plain links, with each mod's source.
 - **Appearance:** colour schemes. Pick *Light*, *Night* or *High contrast*, or press
   *Duplicate* to make your own: choose a colour on the left (window, mod-status and log
@@ -54,6 +56,7 @@ SteamCMD always logs in anonymously; the manager never asks for a Steam account.
 | SteamCMD + download cache | `%LocalAppData%\WorkshopModManager` | `~/.local/share/WorkshopModManager` |
 | RimWorld user data (read) | `%UserProfile%\AppData\LocalLow\Ludeon Studios\...` | `~/.config/unity3d/Ludeon Studios/...` |
 | Backups | two folders above Mods, e.g. `C:\GOG Games\RWBackup_yyyyMMdd` | same rule |
+| Kept (zipped) backups | `RWArchive` next to the backups | same rule |
 
 Deleting or replacing a mod that is a link (junction/symlink) only removes the link, never
 the files it points to.
