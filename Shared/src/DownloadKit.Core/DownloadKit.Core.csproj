@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Download and file code shared by the RimWorld Mod Manager and the
+       Universal Downloader: link sorting, GitHub / GitLab / Nexus, file hosts
+       (MEGA, MediaFire, Drive, Dropbox), archives, link-safe file operations,
+       logging and colour schemes. Nothing game-specific; no UI. -->
+  <PropertyGroup>
+    <RootNamespace>DownloadKit</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RimModManager.Tests" />
+    <InternalsVisibleTo Include="DownloadKit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- zip / 7z / rar / tar archives -->
+    <PackageReference Include="SharpCompress" Version="1.0.0" />
+    <!-- mega.nz public links (MEGA encrypts files client-side) -->
+    <PackageReference Include="MegaApiClient" Version="1.10.5" />
+    <!-- MegaApiClient asks for Newtonsoft.Json 10.0.2, which has a known
+         high-severity flaw (GHSA-5crp-9r3c-p9vr); force the fixed version. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>

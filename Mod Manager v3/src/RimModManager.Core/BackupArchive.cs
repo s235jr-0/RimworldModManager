@@ -97,7 +97,7 @@ public sealed class BackupArchive
         foreach (string dir in Directory.GetDirectories(backup.Path).Where(d => !SafeFileSystem.IsLink(d)).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
         {
             string folder = System.IO.Path.GetFileName(dir);
-            List<FoundMod> mods = ArchiveTools.FindMods(dir, maxDepth: 2);
+            List<FoundMod> mods = ModFinder.FindMods(dir, maxDepth: 2);
             if (mods.Count == 0)
                 sb.AppendLine(folder);
             foreach (FoundMod m in mods)

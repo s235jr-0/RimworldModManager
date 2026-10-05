@@ -24,4 +24,9 @@
     <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="DownloadKit" />
+    <Using Include="DownloadKit.Sources" />
+  </ItemGroup>
+
 </Project>

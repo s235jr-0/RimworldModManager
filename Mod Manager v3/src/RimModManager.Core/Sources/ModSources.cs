@@ -1,29 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace RimModManager.Core.Sources;
-
-// Where an installed mod came from. Shown as a tag everywhere in the app.
-public enum ModSource
-{
-    Steam,
-    Nexus,
-    Git,
-    LoversLab,
-    Manual,
-}
-
-public static class ModSourceTags
-{
-    public static string Tag(ModSource source) => source switch
-    {
-        ModSource.Steam => "Steam",
-        ModSource.Nexus => "Nexus",
-        ModSource.Git => "Git",
-        ModSource.LoversLab => "LoversLab",
-        _ => "Manual",
-    };
-}
 
 // Everything remembered about a mod installed from a non-Steam source, so it
 // can be tagged, re-downloaded and checked for updates later.

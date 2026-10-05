@@ -1,4 +1,4 @@
-namespace RimModManager.Core;
+﻿namespace DownloadKit;
 
 // File operations that never follow junctions or symlinks when deleting or
 // measuring, on Windows and Linux alike. (v2 used robocopy /MIR to delete,

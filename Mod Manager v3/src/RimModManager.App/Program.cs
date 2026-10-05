@@ -21,6 +21,11 @@ internal static class Program
             return;
 
         StartupLink = link;
+
+        // Sent as the User-Agent and to the Nexus API.
+        ClientInfo.Name = "RimModManager";
+        ClientInfo.Version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "3";
+
         AppDomain.CurrentDomain.UnhandledException += (_, e) => LogCrash("The manager crashed: ", e.ExceptionObject);
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {

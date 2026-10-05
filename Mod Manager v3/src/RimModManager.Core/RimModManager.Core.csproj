@@ -11,13 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- zip / 7z / rar / tar archives from non-Steam sources -->
-    <PackageReference Include="SharpCompress" Version="1.0.0" />
-    <!-- mega.nz public links (MEGA encrypts files client-side) -->
-    <PackageReference Include="MegaApiClient" Version="1.10.5" />
-    <!-- MegaApiClient asks for Newtonsoft.Json 10.0.2, which has a known
-         high-severity flaw (GHSA-5crp-9r3c-p9vr); force the fixed version. -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- Downloads, archives, file safety, logging, colour schemes -->
+    <ProjectReference Include="..\..\..\Shared\src\DownloadKit.Core\DownloadKit.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="DownloadKit" />
+    <Using Include="DownloadKit.Sources" />
   </ItemGroup>
 
 </Project>

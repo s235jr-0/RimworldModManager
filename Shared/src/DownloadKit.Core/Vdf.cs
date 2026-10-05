@@ -1,6 +1,6 @@
-using System.Text;
+﻿using System.Text;
 
-namespace RimModManager.Core;
+namespace DownloadKit;
 
 // Minimal reader for Valve's KeyValues text format (.acf/.vdf):
 //   "key" "value"   or   "key" { ...nested... }

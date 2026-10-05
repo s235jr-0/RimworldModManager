@@ -99,7 +99,7 @@ public partial class MainViewModel
         (string Name, bool IsPremium) account = default;
 
         await RunAsync(
-            () => account = new NexusClient(key).Validate(),
+            () => account = NexusSource.Client(key).Validate(),
             () =>
             {
                 NexusAccountText = "Nexus key works: " + account.Name + " (" + (account.IsPremium ? "Premium" : "free") + " account).";

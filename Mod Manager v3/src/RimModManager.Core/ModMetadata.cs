@@ -224,9 +224,9 @@ public static class ModMetadata
                 RimWorldModRecord meta = ReadCached(dir);
                 Sources.SourceRecord? record = sources?.Find(name, meta.PackageId);
 
-                Sources.ModSource source = record?.Source ??
-                    (String.IsNullOrWhiteSpace(id) ? Sources.ModSource.Manual : Sources.ModSource.Steam);
-                bool steam = source == Sources.ModSource.Steam;
+                ModSource source = record?.Source ??
+                    (String.IsNullOrWhiteSpace(id) ? ModSource.Manual : ModSource.Steam);
+                bool steam = source == ModSource.Steam;
 
                 found.Add(new ModEntry
                 {

@@ -1,8 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using SharpCompress.Archives;
-using SharpCompress.Common;
-
-namespace RimModManager.Core.Sources;
+﻿namespace RimModManager.Core.Sources;
 
 public sealed record FoundMod(string Dir, string PackageId, string Name);
 
@@ -15,37 +11,9 @@ public sealed class ArchiveInstallResult
     public string Message { get; set; } = "";
 }
 
-public static class ArchiveTools
+// Finds RimWorld mods (folders with About/About.xml) in unpacked archives and backups.
+public static class ModFinder
 {
-    private static readonly string[] Extensions = { ".zip", ".7z", ".rar", ".tar", ".gz", ".tgz", ".bz2", ".xz" };
-
-    public static bool IsArchive(string path) =>
-        Extensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
-
-    // Unpacks zip / 7z / rar / tar(.gz) into destDir. Entries that would land
-    // outside destDir ("zip-slip", e.g. "../../x") are refused.
-    public static void Extract(string archivePath, string destDir)
-    {
-        Directory.CreateDirectory(destDir);
-        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destDir)) + Path.DirectorySeparatorChar;
-
-        using IArchive archive = ArchiveFactory.Open(archivePath);
-
-        foreach (IArchiveEntry entry in archive.Entries)
-        {
-            if (entry.IsDirectory || String.IsNullOrEmpty(entry.Key)) continue;
-
-            string target = Path.GetFullPath(Path.Combine(destDir, entry.Key.Replace('\\', '/')));
-            if (!target.StartsWith(root, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                throw new InvalidDataException("The archive contains an unsafe path and was not unpacked: " + entry.Key);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            using Stream input = entry.OpenEntryStream();
-            using FileStream output = File.Create(target);
-            input.CopyTo(output);
-        }
-    }
-
     // Every mod folder (one with About/About.xml) inside root, however deeply
     // the archive nested it. A mod's own subfolders are not searched.
     public static List<FoundMod> FindMods(string root, int maxDepth = 6)
@@ -71,15 +39,6 @@ public static class ArchiveTools
         }
 
         return found;
-    }
-
-    // A folder name for a new mod: its name without characters Windows or
-    // Linux can't use, kept short.
-    public static string SafeFolderName(string name, string fallback)
-    {
-        string s = Regex.Replace(name ?? "", @"[<>:""/\\|?*\x00-\x1F]", "").Trim().TrimEnd('.');
-        if (s.Length > 60) s = s.Substring(0, 60).Trim();
-        return s.Length == 0 ? fallback : s;
     }
 }
 
@@ -115,7 +74,7 @@ public sealed class ArchiveInstaller
             status("Unpacking " + Path.GetFileName(archivePath) + "...");
             ArchiveTools.Extract(archivePath, work);
 
-            List<FoundMod> mods = ArchiveTools.FindMods(work);
+            List<FoundMod> mods = ModFinder.FindMods(work);
             if (mods.Count == 0)
                 throw new Exception("No RimWorld mod (a folder with About/About.xml) was found in " + Path.GetFileName(archivePath) + ".");
 

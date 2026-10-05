@@ -1,7 +1,7 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 
-namespace RimModManager.Core;
+namespace DownloadKit;
 
 // The "Manager Log": one file per day, same format as v2
 // ("[HH:mm:ss] [CATEGORY] message"), plus an event the UI listens to.

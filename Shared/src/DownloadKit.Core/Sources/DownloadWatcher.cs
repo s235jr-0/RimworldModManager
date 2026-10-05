@@ -1,4 +1,4 @@
-namespace RimModManager.Core.Sources;
+﻿namespace DownloadKit.Sources;
 
 // Watches a folder (normally the user's Downloads) for archives that finish
 // downloading, for sources that only allow browser downloads (LoversLab).

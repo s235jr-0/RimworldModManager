@@ -75,6 +75,10 @@
   - 24 unit tests for the store and mappings
 
 ## Layout
+The download / archive / file-safety / log / colour-scheme code lives in the shared
+library `..\Shared\src\DownloadKit.Core` (also used by the Universal Downloader);
+`Core` keeps everything RimWorld-specific (About.xml, installer, session, Steam state).
+
 ```
 Mod Manager v3\
   src\RimModManager.Core\    all logic, no UI (Windows + Linux)

@@ -1,20 +1,5 @@
 ﻿namespace RimModManager.Core.Sources;
 
-// Saved tokens / keys. The app provides an encrypted implementation
-// (Windows: DPAPI; Linux: the desktop keyring); tests use a dictionary.
-public interface ISecretStore
-{
-    string? Get(string name);
-    void Set(string name, string? value);
-}
-
-public static class SecretNames
-{
-    public const string GitHubToken = "github_token";
-    public const string GitLabToken = "gitlab_token";
-    public const string NexusApiKey = "nexus_api_key";
-}
-
 // A link that can't be fully automated: the user has to act in the browser
 // (Nexus free accounts, LoversLab). The UI opens OpenUrl and waits.
 public sealed class BrowserStepRequired : Exception
@@ -65,7 +50,7 @@ public sealed class ExternalSources
         return String.IsNullOrWhiteSpace(v) ? null : v;
     }
 
-    private NexusClient Nexus() => new(Secret(SecretNames.NexusApiKey) ?? "");
+    private NexusClient Nexus() => NexusSource.Client(Secret(SecretNames.NexusApiKey) ?? "");
 
     // Forget the cached Premium flag (after the key changes).
     public void ResetNexusAccount() => _nexusPremium = null;
@@ -156,7 +141,7 @@ public sealed class ExternalSources
         }
 
         status("Nexus: finding the newest file of mod " + modId + "...");
-        NexusSource.NexusFile file = nexus.LatestMainFile(modId)
+        Nexus.NexusFile file = nexus.LatestMainFile(modId)
             ?? throw new Exception("This Nexus mod has no main file to download.");
         string url = nexus.DownloadUrl(modId, file.FileId, null, null);
 
@@ -165,18 +150,18 @@ public sealed class ExternalSources
 
     public List<ArchiveInstallResult> InstallNxm(string nxm, string modsRoot, bool backup, Action<string> status)
     {
-        NexusSource.NxmLink link = NexusSource.ParseNxm(nxm);
+        Nexus.NxmLink link = NexusSource.ParseNxm(nxm);
         NexusClient nexus = Nexus();
 
         status("Nexus: preparing download of mod " + link.ModId + "...");
-        NexusSource.NexusFile? file = nexus.Files(link.ModId).FirstOrDefault(f => f.FileId == link.FileId);
+        Nexus.NexusFile? file = nexus.Files(link.ModId).FirstOrDefault(f => f.FileId == link.FileId);
         string url = nexus.DownloadUrl(link.ModId, link.FileId, link.Key, link.Expires);
 
         return DownloadAndInstall(url, file?.FileName, null, modsRoot, backup, status,
-            NexusRecord(link.ModId, file ?? new NexusSource.NexusFile(link.FileId, "", "", "", 0, "")));
+            NexusRecord(link.ModId, file ?? new Nexus.NexusFile(link.FileId, "", "", "", 0, "")));
     }
 
-    private static SourceRecord NexusRecord(int modId, NexusSource.NexusFile file) => new()
+    private static SourceRecord NexusRecord(int modId, Nexus.NexusFile file) => new()
     {
         Source = ModSource.Nexus,
         Url = NexusSource.ModPageUrl(modId),
@@ -259,7 +244,7 @@ public sealed class ExternalSources
 
             case ModSource.Nexus:
             {
-                NexusSource.NexusFile? latest = Nexus().LatestMainFile(int.Parse(r.RemoteId));
+                Nexus.NexusFile? latest = Nexus().LatestMainFile(int.Parse(r.RemoteId));
                 if (latest == null) return new UpdateCheck("Missing / removed", "");
                 bool newer = latest.Uploaded > r.RemoteUpdated;
                 return new UpdateCheck(newer ? "Update available" : "Current", "file " + latest.FileId + (latest.Version.Length > 0 ? " (v" + latest.Version + ")" : ""));

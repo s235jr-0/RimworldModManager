@@ -126,12 +126,7 @@ public sealed class Cleanup
         }
     }
 
-    public static string FormatBytes(long bytes)
-    {
-        if (bytes >= 1L << 30) return (bytes / (double)(1L << 30)).ToString("0.00") + " GB";
-        if (bytes >= 1L << 20) return (bytes / (double)(1L << 20)).ToString("0.0") + " MB";
-        return (bytes / 1024.0).ToString("0") + " KB";
-    }
+    public static string FormatBytes(long bytes) => Sizes.Format(bytes);
 
     public static string Describe(Plan plan)
     {

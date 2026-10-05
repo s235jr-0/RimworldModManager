@@ -26,8 +26,8 @@ public static class SessionReader
             dir =>
             {
                 RimWorldModRecord r = ModMetadata.ReadCached(dir);
-                r.Source = Sources.ModSourceTags.Tag(sources?.SourceOf(r.FolderName, r.PackageId, r.WorkshopId)
-                    ?? (String.IsNullOrWhiteSpace(r.WorkshopId) ? Sources.ModSource.Manual : Sources.ModSource.Steam));
+                r.Source = ModSourceTags.Tag(sources?.SourceOf(r.FolderName, r.PackageId, r.WorkshopId)
+                    ?? (String.IsNullOrWhiteSpace(r.WorkshopId) ? ModSource.Manual : ModSource.Steam));
                 installedBag.Add(r);
 
                 int done = Interlocked.Increment(ref installedDone);

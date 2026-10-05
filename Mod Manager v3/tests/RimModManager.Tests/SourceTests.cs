@@ -53,7 +53,7 @@ public class LinkTests
         Assert.Equal(42, NexusSource.ParseModPage("https://www.nexusmods.com/rimworld/mods/42?tab=files"));
         Assert.Throws<Exception>(() => NexusSource.ParseModPage("https://www.nexusmods.com/skyrim/mods/42"));
 
-        NexusSource.NxmLink l = NexusSource.ParseNxm("nxm://rimworld/mods/42/files/100?key=abc%3D&expires=123&user_id=1");
+        Nexus.NxmLink l = NexusSource.ParseNxm("nxm://rimworld/mods/42/files/100?key=abc%3D&expires=123&user_id=1");
         Assert.Equal(42, l.ModId);
         Assert.Equal(100, l.FileId);
         Assert.Equal("abc=", l.Key);
@@ -104,7 +104,7 @@ public class ArchiveTests
         using TempDir t = new();
         ArchiveTools.Extract(Fixture(fixture), t.Sub("out"));
 
-        FoundMod mod = Assert.Single(ArchiveTools.FindMods(t.Sub("out")));
+        FoundMod mod = Assert.Single(ModFinder.FindMods(t.Sub("out")));
         Assert.Equal("s235jr.test.fixture", mod.PackageId);
         Assert.Equal("Fixture Mod", mod.Name);
         Assert.True(File.Exists(Path.Combine(mod.Dir, "Textures", "a.txt")));
@@ -121,7 +121,7 @@ public class ArchiveTests
             ("readme.txt", "hi"));
 
         ArchiveTools.Extract(t.Sub("pack.zip"), t.Sub("out"));
-        List<FoundMod> mods = ArchiveTools.FindMods(t.Sub("out"));
+        List<FoundMod> mods = ModFinder.FindMods(t.Sub("out"));
 
         Assert.Equal(new[] { "s235jr.a", "s235jr.b" }, mods.Select(m => m.PackageId).OrderBy(x => x));
     }

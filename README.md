@@ -12,6 +12,12 @@ Mod Manager v3/                     RimWorld Mod Manager: Windows + Linux, .NET 
 ├─ BUILD.bat / build.sh             Tests + single-file build into publish/
 └─ Docs/                            README (user guide) + STATUS
 
+Shared/                             DownloadKit: download code shared by both apps
+└─ src/DownloadKit.Core/            Links, GitHub/GitLab/Nexus, file hosts, archives, logging
+
+Universal Downloader/               Sister project (planned): download manager + game profiles
+└─ Docs/STATUS.md                   Plan and roadmap
+
 Mods/                               Small mods, one folder each
 ├─ Rimatomics Diplomatic Credit/
 │  ├─ BuildFiles/                   Source code, About.xml template, Harmony finder

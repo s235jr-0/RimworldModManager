@@ -1,7 +1,7 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:RimModManager.App.ViewModels"
-             xmlns:core="using:RimModManager.Core"
+             xmlns:core="using:DownloadKit"
              xmlns:cp="using:Avalonia.Controls.Primitives"
              x:Class="RimModManager.App.Views.AppearanceView"
              x:DataType="vm:MainViewModel">

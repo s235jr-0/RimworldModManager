@@ -29,4 +29,9 @@
     <ProjectReference Include="..\RimModManager.Core\RimModManager.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="DownloadKit" />
+    <Using Include="DownloadKit.Sources" />
+  </ItemGroup>
+
 </Project>

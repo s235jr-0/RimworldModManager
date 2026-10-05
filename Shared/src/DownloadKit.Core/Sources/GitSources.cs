@@ -1,8 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace RimModManager.Core.Sources;
+namespace DownloadKit.Sources;
 
 // The newest downloadable version of a repository.
 //   Version: release tag, or commit sha when the repo has no releases.

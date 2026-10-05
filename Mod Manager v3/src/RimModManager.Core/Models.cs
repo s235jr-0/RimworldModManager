@@ -34,8 +34,8 @@ public sealed class ModEntry : INotifyPropertyChanged
 
     // Where the mod came from (Steam / Nexus / Git / LoversLab / Manual), and
     // for non-Steam mods the link it was installed from.
-    public Sources.ModSource Source { get; init; } = Sources.ModSource.Manual;
-    public string SourceTag => Sources.ModSourceTags.Tag(Source);
+    public ModSource Source { get; init; } = ModSource.Manual;
+    public string SourceTag => ModSourceTags.Tag(Source);
     public string SourceUrl { get; init; } = "";
 
     public string Link => !String.IsNullOrWhiteSpace(WorkshopId)

@@ -1,8 +1,8 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace RimModManager.Core;
+namespace DownloadKit;
 
 // Colour schemes: named sets of colours for every "role" in the UI. This file
 // is UI-free (colours are "#RRGGBB" strings); the app turns them into brushes.

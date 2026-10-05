@@ -1,8 +1,8 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using CG.Web.MegaApiClient;
 
-namespace RimModManager.Core.Sources;
+namespace DownloadKit.Sources;
 
 public enum LinkKind
 {
@@ -110,7 +110,7 @@ public static class HttpDownloader
         {
             Timeout = TimeSpan.FromMinutes(30),
         };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("RimModManager/3.3");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(ClientInfo.UserAgent);
         return http;
     }
 
@@ -156,8 +156,8 @@ public static class HttpDownloader
             if (status != null && (DateTime.UtcNow - lastReport).TotalMilliseconds > 400)
             {
                 lastReport = DateTime.UtcNow;
-                status("Downloading " + name + ": " + Cleanup.FormatBytes(done) +
-                       (total is > 0 ? " of " + Cleanup.FormatBytes(total.Value) + " (" + done * 100 / total.Value + "%)" : ""));
+                status("Downloading " + name + ": " + Sizes.Format(done) +
+                       (total is > 0 ? " of " + Sizes.Format(total.Value) + " (" + done * 100 / total.Value + "%)" : ""));
             }
         }
 
