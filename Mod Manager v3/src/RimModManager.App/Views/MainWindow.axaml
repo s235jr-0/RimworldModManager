@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RimModManager.App.ViewModels"
+        xmlns:views="using:RimModManager.App.Views"
+        x:Class="RimModManager.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding Title}"
+        Icon="/Assets/RandyRandom.ico"
+        Width="1040" Height="700" MinWidth="900" MinHeight="620"
+        WindowStartupLocation="CenterScreen">
+
+  <DockPanel>
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Bottom" Padding="10,6" BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+    </Border>
+
+    <TabControl Margin="6,4,6,0">
+      <TabItem Header="Install"><views:InstallView /></TabItem>
+      <TabItem Header="Installed / Updates"><views:InstalledView /></TabItem>
+      <TabItem Header="RimWorld Session"><views:SessionView /></TabItem>
+      <TabItem Header="Manager Log"><views:LogView /></TabItem>
+      <TabItem Header="Cleanup"><views:CleanupView /></TabItem>
+      <TabItem Header="Export"><views:ExportView /></TabItem>
+      <TabItem Header="Appearance"><views:AppearanceView /></TabItem>
+    </TabControl>
+  </DockPanel>
+
+</Window>

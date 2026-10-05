@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             x:Class="RimModManager.App.Views.ExportView"
+             x:DataType="vm:MainViewModel">
+
+  <StackPanel Margin="12" Spacing="14">
+    <TextBlock Text="Exports the currently scanned mod list. Scan your Mods folder first on the Installed / Updates tab." />
+
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="Export TXT" Command="{Binding ExportTxtCommand}" MinWidth="120" />
+      <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" MinWidth="120" />
+      <Button Content="Copy Links" Command="{Binding CopyLinksCommand}" MinWidth="120" />
+    </StackPanel>
+  </StackPanel>
+
+</UserControl>

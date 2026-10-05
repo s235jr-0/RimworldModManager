@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RimModManager.App/RimModManager.App.csproj" />
+    <Project Path="src/RimModManager.Core/RimModManager.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RimModManager.Tests/RimModManager.Tests.csproj" />
+  </Folder>
+</Solution>

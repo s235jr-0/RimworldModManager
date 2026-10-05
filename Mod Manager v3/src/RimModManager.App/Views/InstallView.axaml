@@ -1,0 +1,112 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             x:Class="RimModManager.App.Views.InstallView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid Margin="12" RowSpacing="8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" MinHeight="110" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" TextWrapping="Wrap"
+               Text="Links or Workshop IDs, one per line: Steam (IDs, links, collections), GitHub, GitLab / GitGud, Nexus, LoversLab, MEGA, MediaFire, Google Drive, Dropbox or any direct file link." />
+
+    <TextBox Grid.Row="1" Text="{Binding InstallInput}" AutomationProperties.Name="Links" AcceptsReturn="True" TextWrapping="NoWrap"
+             FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+
+    <WrapPanel Grid.Row="2" ItemSpacing="8" LineSpacing="6">
+      <Button Content="Paste" Command="{Binding PasteCommand}" MinWidth="90" />
+      <Button Content="Load .txt" Command="{Binding LoadTxtCommand}" MinWidth="90" />
+      <Button Content="Clear" Command="{Binding ClearInputCommand}" MinWidth="90" />
+      <Button Content="Install from file..." Command="{Binding InstallFromFileCommand}" IsEnabled="{Binding IsNotBusy}"
+              ToolTip.Tip="Install a mod from a .zip / .7z / .rar you already downloaded (tagged Manual)." />
+    </WrapPanel>
+
+    <TextBlock Grid.Row="3" Margin="0,6,0,0" Text="RimWorld Mods folder - mods install directly here:" />
+
+    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <TextBox Text="{Binding ModsFolder}" AutomationProperties.Name="Mods folder" />
+      <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseModsFolderCommand}" MinWidth="90" />
+    </Grid>
+
+    <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="10">
+      <Button Content="Install All" Command="{Binding InstallAllCommand}" IsEnabled="{Binding IsNotBusy}"
+              MinWidth="140" Classes="accent" />
+      <CheckBox Content="Backup before replacement" IsChecked="{Binding BackupBeforeReplace}" />
+    </StackPanel>
+
+    <!-- Downloads that have to be finished in the browser -->
+    <Border Grid.Row="6" IsVisible="{Binding HasPending}" Padding="10,8" CornerRadius="6"
+            BorderThickness="1" BorderBrush="{DynamicResource Theme.StatusWorking}">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+        <TextBlock Text="Waiting for you to finish these in your browser:" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Theme.StatusWorking}" />
+        <Button Grid.Column="1" Content="Stop waiting" Command="{Binding ClearPendingCommand}" />
+        <ItemsControl Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Pending}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:PendingDownload">
+              <TextBlock Text="{Binding Text, StringFormat='• {0}'}" TextWrapping="Wrap" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </Border>
+
+    <!-- Accounts / tokens for non-Steam sources -->
+    <Expander Grid.Row="7" Header="Accounts (GitHub / GitLab tokens, Nexus key, Downloads folder)" HorizontalAlignment="Stretch">
+      <!-- Scrolls on its own so the links box above keeps its room. -->
+      <ScrollViewer MaxHeight="190">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,14,0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+
+        <TextBlock Grid.Row="0" Text="GitHub token (optional)" VerticalAlignment="Center" />
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding GitHubToken}" PasswordChar="●"
+                 PlaceholderText="Not needed; raises GitHub's limit from 60 to 5,000 requests per hour" />
+        <Button Grid.Row="0" Grid.Column="2" Content="Get one" Command="{Binding OpenLinkCommand}"
+                CommandParameter="https://github.com/settings/personal-access-tokens/new"
+                ToolTip.Tip="A fine-grained token with no permissions is enough." />
+
+        <TextBlock Grid.Row="1" Text="GitLab / GitGud token (optional)" VerticalAlignment="Center" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GitLabToken}" PasswordChar="●"
+                 PlaceholderText="Only needed for private projects" />
+
+        <TextBlock Grid.Row="2" Text="Nexus API key" VerticalAlignment="Center" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NexusApiKey}" PasswordChar="●"
+                 PlaceholderText="Nexus doesn't allow username/password logins from other programs; paste your personal API key" />
+        <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="6">
+          <Button Content="Get key" Command="{Binding OpenLinkCommand}"
+                  CommandParameter="https://www.nexusmods.com/users/myaccount?tab=api" />
+          <Button Content="Check key" Command="{Binding CheckNexusKeyCommand}" IsEnabled="{Binding IsNotBusy}" />
+        </StackPanel>
+        <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NexusAccountText}" Opacity="0.8" />
+
+        <TextBlock Grid.Row="4" Text="Nexus download buttons" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding NexusHandlerText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button Grid.Row="4" Grid.Column="2" Content="Handle Nexus links" Command="{Binding RegisterNexusHandlerCommand}"
+                ToolTip.Tip="Makes 'Mod Manager Download' on nexusmods.com send the file here (needed for free accounts)." />
+
+        <TextBlock Grid.Row="5" Text="Downloads folder" VerticalAlignment="Center" />
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DownloadsFolder}"
+                 ToolTip.Tip="Watched for LoversLab downloads you finish in the browser." />
+        <Button Grid.Row="5" Grid.Column="2" Content="Browse" Command="{Binding BrowseDownloadsFolderCommand}" />
+
+        <StackPanel Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="10">
+          <Button Content="Save accounts" Command="{Binding SaveAccountsCommand}" Classes="accent" />
+          <TextBlock Text="{Binding SecretsInfo}" VerticalAlignment="Center" Opacity="0.8" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="7" Grid.ColumnSpan="3" Opacity="0.75" TextWrapping="Wrap"
+                   Text="LoversLab only allows downloads from a browser: paste its link, download the file on the page that opens, and the manager installs it from your Downloads folder. No password is stored." />
+      </Grid>
+      </ScrollViewer>
+    </Expander>
+  </Grid>
+
+</UserControl>

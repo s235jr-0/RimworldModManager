@@ -1,0 +1,11 @@
+# Batch files must keep Windows line endings or cmd.exe can misread them
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Shell scripts must keep Linux line endings or bash can't run them
+*.sh   text eol=lf
+
+# Binary files: never touch
+*.ico  binary
+*.png  binary
+*.zip  binary

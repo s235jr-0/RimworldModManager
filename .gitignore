@@ -1,0 +1,26 @@
+# Build output — always rebuildable from source
+*.exe
+*.dll
+*.pdb
+READY_TO_DROP/
+
+# .NET build output (Mod Manager v3)
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+publish/
+
+# Local diagnostics can contain personal paths — never commit them
+*.log
+Diagnostics/
+
+# Windows clutter
+Thumbs.db
+desktop.ini
+
+# Kept on this computer only, never published
+_Archive/
+CLAUDE.md
+*.bundle

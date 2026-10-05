@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             x:Class="RimModManager.App.Views.CleanupView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
+
+    <TextBlock Grid.Row="0" Margin="0,0,0,6"
+               Text="Frees disk space used by this manager. Installed mods in RimWorld's Mods folder are never touched." />
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="Delete items older than" VerticalAlignment="Center" />
+      <NumericUpDown Value="{Binding CleanupDays}" Minimum="1" Maximum="3650" Increment="1" FormatString="0" Width="130" />
+      <TextBlock Text="days" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <CheckBox Grid.Row="2" IsChecked="{Binding CleanupBackups}"
+              Content="Dated mod backups (RWBackup__yyyyMMdd folders made by &quot;Backup before replacement&quot;)" />
+
+    <CheckBox Grid.Row="3" IsChecked="{Binding CleanupCache}"
+              Content="Download cache (SteamCMD's copy of each mod; a removed one is just downloaded in full next update)" />
+
+    <CheckBox Grid.Row="4" Margin="0,6,0,0" IsChecked="{Binding CleanupAutomatically}"
+              Content="Clean automatically after every install / update" />
+
+    <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="8" Margin="0,6">
+      <Button Content="Refresh sizes" Command="{Binding RefreshCleanupCommand}" IsEnabled="{Binding IsNotBusy}" MinWidth="110" />
+      <Button Content="Clean now..." Command="{Binding CleanNowCommand}" IsEnabled="{Binding IsNotBusy}" MinWidth="110" />
+    </StackPanel>
+
+    <TextBox Grid.Row="6" Text="{Binding CleanupInfo}" IsReadOnly="True" AcceptsReturn="True"
+             FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+  </Grid>
+
+</UserControl>

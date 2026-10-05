@@ -1,0 +1,91 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="RimModManager.App.App"
+             RequestedThemeVariant="Light">
+
+  <!-- Colours come from the selected colour scheme (Services/ThemeManager):
+       Fluent's palette for standard controls, "Theme.<Role>" brushes below. -->
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+
+    <Style Selector="Button">
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Readable text on accent buttons whatever the accent colour is. -->
+    <Style Selector="Button.accent:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.OnAccent}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+      <Setter Property="Fill" Value="{DynamicResource Theme.OnAccent}" />
+    </Style>
+
+    <!-- Fluent's default tab headers are very large; seven tabs must fit. -->
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="Padding" Value="12,0" />
+    </Style>
+
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+    </Style>
+
+    <!-- Source tags (Steam / Nexus / Git / LoversLab / Manual) in the grids. -->
+    <Style Selector="Border.sourcetag">
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="8,1" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+    </Style>
+
+    <!-- Installed grid status text: Tag holds ModEntry.StatusRole. -->
+    <Style Selector="TextBlock.status[Tag=StatusSuccess]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.StatusSuccess}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="TextBlock.status[Tag=StatusWorking]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.StatusWorking}" />
+    </Style>
+    <Style Selector="TextBlock.status[Tag=StatusAttention]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.StatusAttention}" />
+    </Style>
+    <Style Selector="TextBlock.status[Tag=StatusError]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.StatusError}" />
+    </Style>
+
+    <!-- Manager Log lines: Tag holds LogLine.Role. -->
+    <Style Selector="SelectableTextBlock.log">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogText}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogSuccess]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogSuccess}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogError]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogError}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogDownload]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogDownload}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogBackup]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogBackup}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogSkip]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogSkip}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogDelete]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogDelete}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogCheck]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogCheck}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogScan]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogScan}" />
+    </Style>
+  </Application.Styles>
+
+</Application>

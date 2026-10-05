@@ -1,0 +1,51 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             xmlns:core="using:RimModManager.Core"
+             x:Class="RimModManager.App.Views.SessionView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid Margin="12" RowDefinitions="Auto,Auto,3*,Auto,2*" RowSpacing="8">
+
+    <TextBlock Grid.Row="0" Text="RimWorld user-data folder:" />
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+      <TextBox Text="{Binding RimWorldDataFolder}" />
+      <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseDataFolderCommand}" />
+      <Button Grid.Column="2" Content="Read Current Session" Command="{Binding ReadSessionCommand}" IsEnabled="{Binding IsNotBusy}" Classes="accent" />
+      <Button Grid.Column="3" Content="Export LLM Bundle" Command="{Binding ExportBundleCommand}" />
+      <Button Grid.Column="4" Content="Copy LLM Bundle" Command="{Binding CopyBundleCommand}" />
+    </Grid>
+
+    <DataGrid Grid.Row="2" ItemsSource="{Binding SessionMods}" AutoGenerateColumns="False" IsReadOnly="True"
+              CanUserResizeColumns="True" CanUserSortColumns="True" GridLinesVisibility="Horizontal"
+              HeadersVisibility="Column">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="#" Binding="{Binding LoadOrderText}" Width="0.35*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Mod" Binding="{Binding Name}" Width="1.6*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Package ID" Binding="{Binding PackageId}" Width="1.5*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTemplateColumn Header="Source" Width="96" SortMemberPath="Source">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="core:RimWorldModRecord">
+              <Border Classes="sourcetag" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0">
+                <TextBlock Text="{Binding Source}" FontSize="12" />
+              </Border>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Workshop ID" Binding="{Binding WorkshopId}" Width="0.85*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Downloaded" Binding="{Binding DownloadedText}" Width="0.6*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Installed" Binding="{Binding InstalledText}" Width="0.55*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Active" Binding="{Binding ActiveText}" Width="0.45*" x:DataType="core:RimWorldModRecord" />
+        <DataGridTextColumn Header="Game/DLC" Binding="{Binding GameContentText}" Width="0.5*" x:DataType="core:RimWorldModRecord" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <TextBlock Grid.Row="3" Opacity="0.75" TextWrapping="Wrap"
+               Text="Downloaded = present in SteamCMD cache. Installed = present in RimWorld's Mods folder. Active = listed in ModsConfig.xml; # is the actual RimWorld load order." />
+
+    <TextBox Grid.Row="4" Text="{Binding SessionSummary}" IsReadOnly="True" AcceptsReturn="True"
+             FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+  </Grid>
+
+</UserControl>

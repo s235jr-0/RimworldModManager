@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- All mod-manager logic. No UI code, so it can be tested on its own and
+       runs the same on Windows and Linux. -->
+  <PropertyGroup>
+    <RootNamespace>RimModManager.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RimModManager.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- zip / 7z / rar / tar archives from non-Steam sources -->
+    <PackageReference Include="SharpCompress" Version="1.0.0" />
+    <!-- mega.nz public links (MEGA encrypts files client-side) -->
+    <PackageReference Include="MegaApiClient" Version="1.10.5" />
+    <!-- MegaApiClient asks for Newtonsoft.Json 10.0.2, which has a known
+         high-severity flaw (GHSA-5crp-9r3c-p9vr); force the fixed version. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>

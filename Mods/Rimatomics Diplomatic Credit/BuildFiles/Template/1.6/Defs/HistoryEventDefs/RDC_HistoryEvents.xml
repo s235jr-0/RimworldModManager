@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <!-- Reason shown in goodwill messages and faction history for this mod's
+       adjustment, instead of RimWorld's generic "destroyed enemy base". -->
+  <HistoryEventDef>
+    <defName>RDC_RimatomicsStrikeDestroyedBase</defName>
+    <label>Rimatomics strike destroyed a hostile base</label>
+  </HistoryEventDef>
+
+</Defs>

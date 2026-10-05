@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             xmlns:core="using:RimModManager.Core"
+             x:Class="RimModManager.App.Views.LogView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid Margin="12" RowDefinitions="Auto,*" RowSpacing="8">
+
+    <WrapPanel Grid.Row="0" ItemSpacing="8" LineSpacing="6">
+      <Button Content="Refresh Log" Command="{Binding RefreshLogCommand}" />
+      <Button Content="Open Log Folder" Command="{Binding OpenLogFolderCommand}" />
+      <Button Content="Clear Today's Log" Command="{Binding ClearLogCommand}" />
+      <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" Opacity="0.75"
+                 Text="Blue = download, green = installed/success, red = failure, purple = backup, gray = skipped." />
+    </WrapPanel>
+
+    <Border Grid.Row="1" Background="{DynamicResource Theme.LogBackground}" CornerRadius="6" Padding="4">
+      <ListBox Name="LogList" ItemsSource="{Binding LogLines}" Background="Transparent">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="8,1" />
+            <Setter Property="MinHeight" Value="0" />
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="core:LogLine">
+            <SelectableTextBlock Classes="log" Tag="{Binding Role}" Text="{Binding Text}"
+                                 FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="12" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+  </Grid>
+
+</UserControl>

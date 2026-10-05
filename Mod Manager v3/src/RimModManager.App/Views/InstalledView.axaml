@@ -1,0 +1,74 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RimModManager.App.ViewModels"
+             xmlns:core="using:RimModManager.Core"
+             x:Class="RimModManager.App.Views.InstalledView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid Margin="12" RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="8">
+
+    <TextBlock Grid.Row="0" Text="Mod folder:" />
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <TextBox Text="{Binding ModsFolder}">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding ScanCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseAndScanCommand}" IsEnabled="{Binding IsNotBusy}" MinWidth="90" />
+      <Button Grid.Column="2" Content="Scan" Command="{Binding ScanCommand}" IsEnabled="{Binding IsNotBusy}" MinWidth="90" />
+    </Grid>
+
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Mods}" AutoGenerateColumns="False"
+              CanUserResizeColumns="True" CanUserSortColumns="True" GridLinesVisibility="Horizontal"
+              HeadersVisibility="Column" SelectionMode="Extended">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="" Width="40">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="core:ModEntry">
+              <CheckBox IsChecked="{Binding Selected}" HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Source" Width="96" SortMemberPath="SourceTag">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="core:ModEntry">
+              <Border Classes="sourcetag" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0">
+                <TextBlock Text="{Binding SourceTag}" FontSize="12" />
+              </Border>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Folder" Binding="{Binding FolderName}" Width="1.1*" IsReadOnly="True" x:DataType="core:ModEntry" />
+        <DataGridTextColumn Header="Workshop ID" Binding="{Binding WorkshopId}" Width="0.8*" IsReadOnly="True" x:DataType="core:ModEntry" />
+        <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="1.6*" IsReadOnly="True" x:DataType="core:ModEntry" />
+        <DataGridTextColumn Header="App ID" Binding="{Binding AppId}" Width="0.6*" IsReadOnly="True" x:DataType="core:ModEntry" />
+        <DataGridTemplateColumn Header="Status" Width="1.2*" SortMemberPath="Status">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="core:ModEntry">
+              <TextBlock Classes="status" Tag="{Binding StatusRole}" Text="{Binding Status}"
+                         VerticalAlignment="Center" Margin="12,0" TextTrimming="CharacterEllipsis" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Steam updated" Binding="{Binding UpdatedText}" Width="1*" IsReadOnly="True" x:DataType="core:ModEntry" />
+        <DataGridTextColumn Header="Link" Binding="{Binding Link}" Width="1.6*" IsReadOnly="True" x:DataType="core:ModEntry" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <WrapPanel Grid.Row="3" ItemSpacing="8" LineSpacing="6">
+      <Button Content="Check for Updates" Command="{Binding CheckSteamCommand}" IsEnabled="{Binding IsNotBusy}" />
+      <Button Content="Update Selected" Command="{Binding UpdateSelectedCommand}" IsEnabled="{Binding IsNotBusy}" />
+      <Button Content="Update Outdated / Unknown" Command="{Binding UpdateNeededCommand}" IsEnabled="{Binding IsNotBusy}" />
+      <Button Content="Select All" Command="{Binding SelectAllCommand}" />
+      <Button Content="Clear Selection" Command="{Binding ClearSelectionCommand}" />
+      <Button Content="Delete Selected" Command="{Binding DeleteSelectedCommand}" IsEnabled="{Binding IsNotBusy}" />
+    </WrapPanel>
+
+    <CheckBox Grid.Row="4" Content="Backup before replacement" IsChecked="{Binding BackupBeforeReplace}" />
+
+    <TextBlock Grid.Row="5" Opacity="0.75" TextWrapping="Wrap"
+               Text="First scan: existing mods may show 'Unknown'. Update once to adopt them. Manager Log separates DOWNLOAD from INSTALL." />
+  </Grid>
+
+</UserControl>
