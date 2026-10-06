@@ -8,5 +8,7 @@
     <Version>0.1.0</Version>
     <Authors>s235JR</Authors>
     <Product>G.H.U.D. (General Hotfix Universal Downloader)</Product>
+    <Copyright>Copyright (C) 2026 s235JR. GPL-3.0-or-later.</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

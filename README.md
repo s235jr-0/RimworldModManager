@@ -55,3 +55,10 @@ is tagged with where it came from. See [`Mod Manager v3/Docs/README.md`](Mod%20M
   about C# 5. The mods stay on .NET Framework because that's what RimWorld runs.
 - RimWorld 1.6; the build scripts look in the default GOG folder `C:\GOG Games\RimWorld`.
 - Harmony 2.x: Workshop mod 2009463077, found automatically by `Find_Harmony2.ps1`.
+
+## License
+
+- Everything in this repository is under the MIT License (`LICENSE`), **except** the
+  `GHUD/` folder, which is under the GNU General Public License v3.0 or later
+  (`GHUD/LICENSE`, third-party notices in `GHUD/THIRD-PARTY-NOTICES.md`).
+- The RimWorld Mod Manager is planned to move to GPL-3.0-or-later as well.

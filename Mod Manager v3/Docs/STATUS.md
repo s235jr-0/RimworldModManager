@@ -135,3 +135,7 @@ between them loses nothing.
    download, MEGA / MediaFire links.
 2. Later: tell scenarios apart from mods; compare mod versions across kept backups.
 3. Test on Linux (install WSL, or on a Linux machine): `./build.sh`, then the app.
+4. Licence: switch to GPL-3.0-or-later like G.H.U.D. (the user's decision, 2026-10-06):
+   LICENSE text, README notice, THIRD-PARTY-NOTICES (Avalonia, CommunityToolkit.Mvvm,
+   SharpCompress, MegaApiClient, Newtonsoft.Json, ProtectedData, .NET runtime), notice in
+   the app, ship the files with the .exe.

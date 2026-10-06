@@ -77,13 +77,22 @@ GHUD\
   in the game folder kept, RimWorld folder deploy leaves hand-installed mods alone, links
   in staging not followed.
 
+## Licence
+GPL-3.0-or-later, Copyright (C) 2026 s235JR: `LICENSE` (official text, unchanged),
+notice in `README.md`, bundled libraries in `THIRD-PARTY-NOTICES.md` (all MIT, compatible
+with the GPL). Version stamped into every built file through `Directory.Build.props`.
+
 ## Roadmap
 1. ✅ DownloadKit library (downloads, sources, archives, logs, colour schemes).
 2. ✅ Core: instances, modules, staging, deployer, load order by priority, conflicts.
 3. Window: instance picker, mod list (drag to reorder, on/off, source tags, conflicts),
    install from links / files (DownloadKit), Deploy / Undeploy, Accounts, Log, Appearance.
    Reuses UI pieces from the RimWorld manager (colour schemes, dialogs, saved accounts)
-   as a `DownloadKit.Ui` library here.
+   as a `DownloadKit.Ui` library here. Licence duties for the window: an About box with
+   the copyright, "no warranty" and where the licence is (GPL-3.0 section 5d); add the
+   UI libraries (Avalonia, Skia, HarfBuzz, CommunityToolkit.Mvvm, ...) to
+   `THIRD-PARTY-NOTICES.md`; release builds ship `LICENSE` and the notices next to the
+   `.exe` and say where the source is.
 4. RimWorld instance extras: Steam Workshop through anonymous SteamCMD (move SteamCmd to
    DownloadKit), update checks per source, adopting mods already in the Mods folder.
 5. Download library: keep every downloaded archive for reinstall / rollback.
