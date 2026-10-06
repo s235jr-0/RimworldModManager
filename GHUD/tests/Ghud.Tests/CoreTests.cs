@@ -10,7 +10,7 @@ internal sealed class World : IDisposable
 {
     public TempDir T { get; } = new();
     public GameInstance Instance { get; }
-    public ModList List { get; }
+    public ModSet Mods { get; private set; }
     public Staging Staging { get; }
     public Deployer Deployer { get; }
     public ActivityLog Log { get; }
@@ -22,8 +22,8 @@ internal sealed class World : IDisposable
         IGameModule module = moduleId == "rimworld" ? new RimWorldModule() : new GeneralModule(general ?? new GeneralGameSettings());
         Instance = store.Create("Test Game", module, T.Sub("Game"), general);
         Log = new ActivityLog(T.Sub("logs"));
-        List = new ModList(Instance.ModListFile);
-        Staging = new Staging(Instance, module, List, Log);
+        Mods = new ModSet(Instance);
+        Staging = new Staging(Instance, module, Mods, Log);
         Deployer = new Deployer(Instance, Log);
     }
 
@@ -59,7 +59,7 @@ public class ModuleTests
             ("Wrapper/Cool Mod/Defs/a.xml", "a"),
             ("Wrapper/Other/About/About.xml", "<ModMetaData><name>Other</name></ModMetaData>"));
 
-        List<StagedMod> staged = w.Staging.InstallArchive(zip, ModSource.Manual);
+        List<StagedMod> staged = w.Staging.InstallArchive(zip, ArchiveOrigin.Manual());
 
         Assert.Equal(new[] { "Cool Mod", "Other" }, staged.Select(m => m.Name).OrderBy(x => x));
         StagedMod cool = staged.Single(m => m.Name == "Cool Mod");
@@ -116,15 +116,15 @@ public class StagingTests
     {
         using World w = new("rimworld");
         string about = "<ModMetaData><name>A</name><packageId>s235jr.a</packageId></ModMetaData>";
-        w.Staging.InstallArchive(w.Zip("a1", ("A/About/About.xml", about), ("A/old.txt", "1")), ModSource.Git, version: "1");
-        w.Staging.InstallArchive(w.Zip("b", ("B/About/About.xml", "<ModMetaData><name>B</name></ModMetaData>")), ModSource.Manual);
-        w.List.Find(w.List.Mods[0].Key)!.Enabled = false;
+        w.Staging.InstallArchive(w.Zip("a1", ("A/About/About.xml", about), ("A/old.txt", "1")), new ArchiveOrigin(ModSource.Git, Version: "1"));
+        w.Staging.InstallArchive(w.Zip("b", ("B/About/About.xml", "<ModMetaData><name>B</name></ModMetaData>")), ArchiveOrigin.Manual());
+        w.Mods.SetEnabled(w.Mods.Order[0].Key, false);
 
-        w.Staging.InstallArchive(w.Zip("a2", ("A/About/About.xml", about), ("A/new.txt", "2")), ModSource.Git, version: "2");
+        w.Staging.InstallArchive(w.Zip("a2", ("A/About/About.xml", about), ("A/new.txt", "2")), new ArchiveOrigin(ModSource.Git, Version: "2"));
 
-        Assert.Equal(new[] { "A", "B" }, w.List.Mods.Select(m => m.Name));
-        StagedMod a = w.List.Mods[0];
-        Assert.False(a.Enabled);
+        Assert.Equal(new[] { "A", "B" }, w.Mods.Current().Select(p => p.Mod.Name));
+        StagedMod a = w.Mods.Current()[0].Mod;
+        Assert.False(w.Mods.Current()[0].Entry.Enabled);
         Assert.Equal("2", a.Version);
         string dir = Path.Combine(w.Instance.StagingRoot, a.Key, "A");
         Assert.True(File.Exists(Path.Combine(dir, "new.txt")));
@@ -132,16 +132,16 @@ public class StagingTests
         Assert.False(Directory.Exists(Path.Combine(w.Instance.StagingRoot, a.Key + ".new")));
 
         // Saved and reloaded the same.
-        Assert.Equal(new[] { "A", "B" }, new ModList(w.Instance.ModListFile).Mods.Select(m => m.Name));
+        Assert.Equal(new[] { "A", "B" }, new ModSet(w.Instance).Current().Select(p => p.Mod.Name));
     }
 
     [Fact]
     public void ArchiveWithoutMods_IsRefused_AndLeavesNothingBehind()
     {
         using World w = new("rimworld");
-        Exception ex = Assert.Throws<Exception>(() => w.Staging.InstallArchive(w.Zip("junk", ("readme.txt", "x")), ModSource.Manual));
+        Exception ex = Assert.Throws<Exception>(() => w.Staging.InstallArchive(w.Zip("junk", ("readme.txt", "x")), ArchiveOrigin.Manual()));
         Assert.Contains("No RimWorld mod", ex.Message);
-        Assert.Empty(w.List.Mods);
+        Assert.Empty(w.Mods.Catalog);
         Assert.False(Directory.Exists(w.Instance.TempRoot) && Directory.EnumerateFileSystemEntries(w.Instance.TempRoot).Any());
     }
 
@@ -172,10 +172,10 @@ public class DeployerTests
     public void LowerModWins_ReorderSwapsWinner_ConflictsReported()
     {
         using World w = MergeWorld();
-        w.Staging.InstallArchive(w.Zip("ModA", ("gamedata/shared.ltx", "A"), ("gamedata/a_only.ltx", "a")), ModSource.Manual);
-        w.Staging.InstallArchive(w.Zip("ModB", ("gamedata/shared.ltx", "B")), ModSource.Manual);
+        w.Staging.InstallArchive(w.Zip("ModA", ("gamedata/shared.ltx", "A"), ("gamedata/a_only.ltx", "a")), ArchiveOrigin.Manual());
+        w.Staging.InstallArchive(w.Zip("ModB", ("gamedata/shared.ltx", "B")), ArchiveOrigin.Manual());
 
-        DeployResult r = w.Deployer.Deploy(w.List.Mods);
+        DeployResult r = w.Deployer.Deploy(w.Mods.Order);
 
         Assert.Equal("B", File.ReadAllText(w.Deployed("gamedata/shared.ltx")));
         Assert.Equal("a", File.ReadAllText(w.Deployed("gamedata/a_only.ltx")));
@@ -183,8 +183,8 @@ public class DeployerTests
         Assert.Equal(Path.Combine("gamedata", "shared.ltx"), c.Path);
         Assert.Equal("ModB", c.Winner);
 
-        w.List.Move("ModB", 0);
-        DeployResult r2 = w.Deployer.Deploy(w.List.Mods);
+        w.Mods.Move("ModB", 0);
+        DeployResult r2 = w.Deployer.Deploy(w.Mods.Order);
 
         Assert.Equal("A", File.ReadAllText(w.Deployed("gamedata/shared.ltx")));
         Assert.Equal("ModA", Assert.Single(r2.Conflicts).Winner);
@@ -199,8 +199,8 @@ public class DeployerTests
         File.WriteAllText(w.Deployed("gamedata/shared.ltx"), "VANILLA");
         File.WriteAllText(w.Deployed("game.exe"), "exe");
 
-        w.Staging.InstallArchive(w.Zip("ModA", ("gamedata/shared.ltx", "A"), ("gamedata/new/deep.ltx", "d")), ModSource.Manual);
-        DeployResult r = w.Deployer.Deploy(w.List.Mods);
+        w.Staging.InstallArchive(w.Zip("ModA", ("gamedata/shared.ltx", "A"), ("gamedata/new/deep.ltx", "d")), ArchiveOrigin.Manual());
+        DeployResult r = w.Deployer.Deploy(w.Mods.Order);
 
         Assert.Equal(1, r.OriginalsKept);
         Assert.Equal("A", File.ReadAllText(w.Deployed("gamedata/shared.ltx")));
@@ -221,16 +221,16 @@ public class DeployerTests
     {
         using World w = MergeWorld();
         File.WriteAllText(w.Deployed("cfg.ini"), "VANILLA");
-        w.Staging.InstallArchive(w.Zip("ModA", ("cfg.ini", "A")), ModSource.Manual);
-        w.Staging.InstallArchive(w.Zip("ModB", ("cfg.ini", "B")), ModSource.Manual);
-        w.Deployer.Deploy(w.List.Mods);
+        w.Staging.InstallArchive(w.Zip("ModA", ("cfg.ini", "A")), ArchiveOrigin.Manual());
+        w.Staging.InstallArchive(w.Zip("ModB", ("cfg.ini", "B")), ArchiveOrigin.Manual());
+        w.Deployer.Deploy(w.Mods.Order);
 
-        w.List.Find("ModB")!.Enabled = false;
-        w.Deployer.Deploy(w.List.Mods);
+        w.Mods.SetEnabled("ModB", false);
+        w.Deployer.Deploy(w.Mods.Order);
         Assert.Equal("A", File.ReadAllText(w.Deployed("cfg.ini")));
 
-        w.List.Find("ModA")!.Enabled = false;
-        w.Deployer.Deploy(w.List.Mods);
+        w.Mods.SetEnabled("ModA", false);
+        w.Deployer.Deploy(w.Mods.Order);
         Assert.Equal("VANILLA", File.ReadAllText(w.Deployed("cfg.ini")));
     }
 
@@ -238,9 +238,9 @@ public class DeployerTests
     public void UsesHardLinksOnTheSameDrive()
     {
         using World w = MergeWorld();
-        w.Staging.InstallArchive(w.Zip("ModA", ("a.txt", "A")), ModSource.Manual);
+        w.Staging.InstallArchive(w.Zip("ModA", ("a.txt", "A")), ArchiveOrigin.Manual());
 
-        DeployResult r = w.Deployer.Deploy(w.List.Mods);
+        DeployResult r = w.Deployer.Deploy(w.Mods.Order);
 
         Assert.Equal(1, r.Linked);
         Assert.True(w.Deployer.LoadManifest().Files.Values.Single().Linked);
@@ -250,8 +250,8 @@ public class DeployerTests
     public void AFileReplacedInTheGameFolder_IsKeptNotDeleted()
     {
         using World w = MergeWorld();
-        w.Staging.InstallArchive(w.Zip("ModA", ("cfg.ini", "A")), ModSource.Manual);
-        w.Deployer.Deploy(w.List.Mods);
+        w.Staging.InstallArchive(w.Zip("ModA", ("cfg.ini", "A")), ArchiveOrigin.Manual());
+        w.Deployer.Deploy(w.Mods.Order);
 
         // Like a game update: the file is replaced with a new one.
         File.Delete(w.Deployed("cfg.ini"));
@@ -272,14 +272,14 @@ public class DeployerTests
         using World w = new("rimworld");
         w.Staging.InstallArchive(w.Zip("pack",
             ("Cool Mod/About/About.xml", "<ModMetaData><name>Cool Mod</name><packageId>s235jr.cool</packageId></ModMetaData>"),
-            ("Cool Mod/Defs/a.xml", "a")), ModSource.Manual);
+            ("Cool Mod/Defs/a.xml", "a")), ArchiveOrigin.Manual());
         Directory.CreateDirectory(w.Deployed("Hand Installed"));
 
-        w.Deployer.Deploy(w.List.Mods);
+        w.Deployer.Deploy(w.Mods.Order);
         Assert.True(File.Exists(w.Deployed(Path.Combine("Cool Mod", "Defs", "a.xml"))));
 
-        w.Staging.Remove(w.List.Mods[0].Key);
-        w.Deployer.Deploy(w.List.Mods);
+        w.Staging.Remove(w.Mods.Order[0].Key);
+        w.Deployer.Deploy(w.Mods.Order);
 
         Assert.False(Directory.Exists(w.Deployed("Cool Mod")));
         Assert.True(Directory.Exists(w.Deployed("Hand Installed")));   // not GHUD's, never touched
@@ -289,13 +289,13 @@ public class DeployerTests
     public void LinksInStaging_AreNeverFollowed()
     {
         using World w = MergeWorld();
-        w.Staging.InstallArchive(w.Zip("ModA", ("a.txt", "A")), ModSource.Manual);
+        w.Staging.InstallArchive(w.Zip("ModA", ("a.txt", "A")), ArchiveOrigin.Manual());
         string outside = w.T.Sub("Outside");
         Directory.CreateDirectory(outside);
         File.WriteAllText(Path.Combine(outside, "secret.txt"), "s");
         MakeDirectoryLink(Path.Combine(w.Instance.StagingRoot, "ModA", "linked"), outside);
 
-        w.Deployer.Deploy(w.List.Mods);
+        w.Deployer.Deploy(w.Mods.Order);
 
         Assert.False(File.Exists(w.Deployed(Path.Combine("linked", "secret.txt"))));
         Assert.True(File.Exists(w.Deployed("a.txt")));

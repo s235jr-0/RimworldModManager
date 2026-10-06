@@ -12,15 +12,32 @@ public static class GhudPaths
         "GHUD");
 
     public static string InstancesRoot => Path.Combine(DataRoot, "instances");
+
+    // Where an instance keeps its staged mods and downloaded archives. Hard
+    // links only work within one drive, so on Windows a game on another drive
+    // gets "<drive>\GHUD Staging\<instance>"; otherwise the instance's own
+    // data folder is used.
+    public static string StorageFor(string gameFolder, string dataFolder, string instanceId)
+    {
+        if (!OperatingSystem.IsWindows()) return dataFolder;
+
+        string gameRoot = Path.GetPathRoot(Path.GetFullPath(gameFolder)) ?? "";
+        string dataRoot = Path.GetPathRoot(Path.GetFullPath(dataFolder)) ?? "";
+        return gameRoot.Length == 0 || gameRoot.Equals(dataRoot, StringComparison.OrdinalIgnoreCase)
+            ? dataFolder
+            : Path.Combine(gameRoot, "GHUD Staging", instanceId);
+    }
 }
 
 // One installed game managed by GHUD. Its own folder (DataFolder) holds:
-//   instance.json  these settings
-//   mods.json      the mod list, in priority order
+//   instance.json   these settings
+//   mods.json       the staged mods (shared by all profiles)
+//   profiles.json   each profile's order and on/off choices, and the active one
 //   deployment.json which files GHUD placed in the game, and for which mod
-//   staging\       each mod unpacked in its own folder (unless StagingFolder is set)
-//   originals\     game files a mod replaced, put back when the mod goes
-//   changed\       deployed files that were edited in the game folder, kept on removal
+//   originals\      game files a mod replaced, put back when the mod goes
+//   changed\        deployed files that were edited in the game folder, kept on removal
+// Staged mods and downloaded archives live under StorageRoot (on the game's
+// drive): staging\<mod>\ and downloads\.
 public sealed class GameInstance
 {
     public string Id { get; set; } = "";
@@ -29,17 +46,20 @@ public sealed class GameInstance
     public string GameFolder { get; set; } = "";
     public string DeploySubfolder { get; set; } = "";
 
-    // Hard links only work within one drive: put staging on the game's drive
-    // when the game isn't on the same drive as GHUD's data folder.
-    public string? StagingFolder { get; set; }
+    // Staging + download library location (GhudPaths.StorageFor); null =
+    // the data folder.
+    public string? StorageFolder { get; set; }
 
     public GeneralGameSettings? General { get; set; }
 
     [JsonIgnore] public string DataFolder { get; set; } = "";
 
     [JsonIgnore] public string DeployFolder => Path.Combine(GameFolder, DeploySubfolder);
-    [JsonIgnore] public string StagingRoot => String.IsNullOrWhiteSpace(StagingFolder) ? Path.Combine(DataFolder, "staging") : StagingFolder;
+    [JsonIgnore] public string StorageRoot => String.IsNullOrWhiteSpace(StorageFolder) ? DataFolder : StorageFolder;
+    [JsonIgnore] public string StagingRoot => Path.Combine(StorageRoot, "staging");
+    [JsonIgnore] public string DownloadsRoot => Path.Combine(StorageRoot, "downloads");
     [JsonIgnore] public string ModListFile => Path.Combine(DataFolder, "mods.json");
+    [JsonIgnore] public string ProfilesFile => Path.Combine(DataFolder, "profiles.json");
     [JsonIgnore] public string ManifestFile => Path.Combine(DataFolder, "deployment.json");
     [JsonIgnore] public string OriginalsRoot => Path.Combine(DataFolder, "originals");
     [JsonIgnore] public string ChangedRoot => Path.Combine(DataFolder, "changed");
@@ -103,8 +123,21 @@ public sealed class InstanceStore
             General = general,
             DataFolder = Path.Combine(_root, id),
         };
+        string storage = GhudPaths.StorageFor(gameFolder, i.DataFolder, id);
+        if (storage != i.DataFolder) i.StorageFolder = storage;
         Save(i);
         return i;
+    }
+
+    // Forgets an instance: its settings, profiles and records. Staged mods and
+    // the download library are only deleted when deleteStorage is set. The
+    // game folder is never touched here (undeploy first).
+    public void Delete(GameInstance i, bool deleteStorage)
+    {
+        if (deleteStorage && i.StorageRoot != i.DataFolder && Directory.Exists(i.StorageRoot))
+            SafeFileSystem.DeleteDirectory(i.StorageRoot);
+        if (Directory.Exists(i.DataFolder))
+            SafeFileSystem.DeleteDirectory(i.DataFolder);
     }
 
     public void Save(GameInstance i)

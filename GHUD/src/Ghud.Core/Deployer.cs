@@ -64,19 +64,20 @@ public sealed class Deployer
     }
 
     // Which file comes from which mod, and every conflict. Reads staging only.
-    public (Dictionary<string, (StagedMod Mod, string Source)> Winners, List<Conflict> Conflicts) Plan(IReadOnlyList<StagedMod> mods)
+    // `order` is a profile: mod keys in priority order with on/off.
+    public (Dictionary<string, (string Mod, string Source)> Winners, List<Conflict> Conflicts) Plan(IReadOnlyList<ProfileEntry> order)
     {
-        Dictionary<string, (StagedMod Mod, string Source)> winners = new(PathComparer);
+        Dictionary<string, (string Mod, string Source)> winners = new(PathComparer);
         Dictionary<string, List<string>> providers = new(PathComparer);
 
-        foreach (StagedMod mod in mods.Where(m => m.Enabled))
+        foreach (ProfileEntry mod in order.Where(m => m.Enabled))
         {
             string root = Path.Combine(_instance.StagingRoot, mod.Key);
             if (!Directory.Exists(root)) continue;
 
             foreach (string rel in Files(root, ""))
             {
-                winners[rel] = (mod, Path.Combine(root, rel));
+                winners[rel] = (mod.Key, Path.Combine(root, rel));
                 if (!providers.TryGetValue(rel, out List<string>? list))
                     providers[rel] = list = new List<string>();
                 list.Add(mod.Key);
@@ -90,12 +91,12 @@ public sealed class Deployer
         return (winners, conflicts);
     }
 
-    public DeployResult Deploy(IReadOnlyList<StagedMod> mods, Action<string>? status = null)
+    public DeployResult Deploy(IReadOnlyList<ProfileEntry> order, Action<string>? status = null)
     {
         string deployRoot = Path.GetFullPath(_instance.DeployFolder);
         Directory.CreateDirectory(deployRoot);
 
-        (Dictionary<string, (StagedMod Mod, string Source)> wanted, List<Conflict> conflicts) = Plan(mods);
+        (Dictionary<string, (string Mod, string Source)> wanted, List<Conflict> conflicts) = Plan(order);
         DeploymentManifest manifest = LoadManifest();
         int placed = 0, removed = 0, unchanged = 0, linked = 0, copied = 0, originals = 0, edited = 0;
 
@@ -105,7 +106,7 @@ public sealed class Deployer
             foreach (string rel in manifest.Files.Keys.ToList())
             {
                 DeployedFile was = manifest.Files[rel];
-                if (wanted.TryGetValue(rel, out var w) && w.Mod.Key == was.Mod && SameAsSource(Target(deployRoot, rel), w.Source))
+                if (wanted.TryGetValue(rel, out var w) && w.Mod == was.Mod && SameAsSource(Target(deployRoot, rel), w.Source))
                     continue;
 
                 status?.Invoke("Removing " + rel);
@@ -117,10 +118,10 @@ public sealed class Deployer
             }
 
             // 2. Place every wanted file that isn't there yet.
-            foreach ((string rel, (StagedMod mod, string source)) in wanted)
+            foreach ((string rel, (string mod, string source)) in wanted)
             {
                 string target = Target(deployRoot, rel);
-                if (manifest.Files.TryGetValue(rel, out DeployedFile? cur) && cur.Mod == mod.Key && SameAsSource(target, source))
+                if (manifest.Files.TryGetValue(rel, out DeployedFile? cur) && cur.Mod == mod && SameAsSource(target, source))
                 {
                     unchanged++;
                     continue;
@@ -150,7 +151,7 @@ public sealed class Deployer
                 FileInfo fi = new(target);
                 manifest.Files[rel] = new DeployedFile
                 {
-                    Mod = mod.Key,
+                    Mod = mod,
                     Linked = link,
                     Size = fi.Length,
                     WriteTicksUtc = fi.LastWriteTimeUtc.Ticks,
@@ -188,7 +189,7 @@ public sealed class Deployer
     }
 
     // Takes every GHUD file out of the game and puts the originals back.
-    public DeployResult Undeploy(Action<string>? status = null) => Deploy(Array.Empty<StagedMod>(), status);
+    public DeployResult Undeploy(Action<string>? status = null) => Deploy(Array.Empty<ProfileEntry>(), status);
 
     // ------------------------------------------------------------------
 
