@@ -49,4 +49,9 @@ public interface IGameModule
     // The mods inside an unpacked archive. Empty = this archive has no mod
     // this game recognises.
     List<ModCandidate> FindMods(string unpackedRoot);
+
+    // For adopting mods already in the game: is this folder (directly inside
+    // the deploy folder) one mod? Always false when mods merge into the game
+    // folder, since their files can't be told apart from the game's.
+    bool IsModFolder(string dir);
 }

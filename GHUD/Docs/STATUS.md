@@ -6,7 +6,9 @@ without a module (a niche or new game with a mods folder). GHUD is the parent ap
 RimWorld Mod Manager's features become its RimWorld module. .NET 10 + Avalonia 12,
 Windows + Linux. Self-contained in this folder, ready to move to its own repository.
 
-**Current version:** 0.2.0, first usable window (home screen, games, profiles, install, deploy).
+**Current version:** 0.3.0: the core matches the RimWorld Mod Manager's general features
+(updates, rollback, library cleanup, export, Nexus links, LoversLab pickup, colour schemes,
+adopting existing mods). Next: the RimWorld module.
 
 ## Decisions (2026-10-05)
 - Mods are **staged** (each unpacked in its own folder) and **deployed** into the game with
@@ -107,6 +109,25 @@ GHUD\
   conflicts shown, Deploy placed the winner as hard links and kept the game's file,
   Undeploy restored the folder exactly, Remove game deleted everything.
 
+## Added in 0.3.0 (parity with the RimWorld Mod Manager)
+| RimWorld Mod Manager | GHUD |
+|---|---|
+| Check for updates / Update selected / outdated | Same, per source (GitHub, GitLab, Nexus); Update column |
+| Backup + revert on a failed update | Staging swaps only when complete; every archive stays in the library; **Roll back** to an earlier one |
+| Cleanup (backups, cache after N days) | **Clean up library** after N days (preview first); never a mod's current archive or a mod marked **Keep all versions** |
+| Keep backups permanently | **Keep all versions** per mod |
+| Export TXT / CSV / links | Same for the active profile, plus copy links |
+| nxm:// links, single window | Same; GHUD owns them (opt-in) and routes each link to the game with that Nexus name |
+| LoversLab pick-up from Downloads | Same; waiting panel; Downloads folder under Accounts (`settings.json`) |
+| Appearance tab | Appearance page (same editor and `themes.json` format) |
+| — | **Adopt existing mods** (folder-per-mod games): offered on a game's first visit; moved into staging and deployed straight back |
+| — | **Remove game** asks: leave the mods in the game (hard-linked files survive) or take them out; game files mods had replaced are never deleted (moved to `kept originals`) |
+
+Tested through the window (2026-10-06): adoption on a fake RimWorld folder (offered, moved,
+deployed back), install-links failure reported cleanly, Check updates, Appearance page,
+Remove game. Not tested live: downloads from GitHub (its servers were unreachable from
+this computer that day; the same code worked the day before), Nexus, LoversLab, MEGA.
+
 ## Licence
 GPL-3.0-or-later, Copyright (C) 2026 s235JR: `LICENSE` (official text, unchanged),
 notice in `README.md` and the About box, bundled components in `THIRD-PARTY-NOTICES.md`
@@ -119,18 +140,16 @@ non-MIT texts in `licenses\`. Builds copy `LICENSE`, the notices and `licenses\`
 2. ✅ Core: instances, modules, staging, deployer, load order by priority, conflicts.
 3. ✅ Window (v0.2.0): home tiles, add game, profiles, mod list, install, deploy, accounts,
    About + licence files.
-4. Next (towards a first release, 0.3–0.5):
-   - adopt mods already in a game folder (decision: offer, tagged Manual)
-   - download queue: 3 at once, resume, progress per item; `nxm://` handler (GHUD owns it)
-     and the LoversLab / Downloads-folder pickup
-   - update checks per source + update button; rollback from the download library;
-     library cleanup after N days
-   - drag-and-drop ordering; Appearance (colour scheme editor); Linux test
-   - RimWorld: Steam Workshop through anonymous SteamCMD
-   - release build script (single-file GHUD.exe + LICENSE + notices + licenses\), README
-     user guide, then its own GitHub repository
-5. Skyrim SE/AE + Fallout 4 module: `Data\` deploy, script extenders into the game folder,
+4. ✅ Core parity with the RimWorld Mod Manager (0.3.0): see the table above.
+5. **Next: the RimWorld module** (the RimWorld Mod Manager's RimWorld-only features):
+   Steam Workshop through anonymous SteamCMD (IDs, links, collections; grouped downloads;
+   update checks), the session reader (ModsConfig.xml load order, Player.log, LLM bundle),
+   Workshop-ID detection of existing mods.
+6. Before a first release: download queue (3 at once, resume, progress per item),
+   drag-and-drop ordering, Linux test, release build script (single-file GHUD.exe +
+   LICENSE + notices + licenses), README user guide, then its own GitHub repository.
+7. Skyrim SE/AE + Fallout 4 module: `Data\` deploy, script extenders into the game folder,
    plugin list (`plugins.txt`) and its order, FOMOD installers.
-6. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
+8. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
 
 ## Open questions

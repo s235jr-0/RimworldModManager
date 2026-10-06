@@ -25,6 +25,9 @@ public interface IDialogs
     // Pick one item from a list; -1 if cancelled.
     Task<int> Choose(string message, string title, IReadOnlyList<string> options);
 
+    // Tick any number of items (all ticked to start); null if cancelled.
+    Task<List<int>?> ChooseMany(string message, string title, IReadOnlyList<string> options);
+
     Task<string?> PickFolder(string title, string? startPath);
     Task<string?> OpenFile(string title, string filterName, string pattern);
     Task<string?> SaveFile(string title, string suggestedName, string filterName, string pattern);
@@ -58,6 +61,50 @@ public sealed class Dialogs : IDialogs
 
     public Task<bool> Confirm(string message, string title, bool defaultYes = false) =>
         Show(title, message, null, new[] { ("Yes", true), ("No", false) }, defaultYes ? 0 : 1);
+
+    public async Task<List<int>?> ChooseMany(string message, string title, IReadOnlyList<string> options)
+    {
+        Window dialog = new()
+        {
+            Title = title,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            CanResize = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            MinWidth = 420,
+            MaxWidth = 720,
+        };
+
+        List<CheckBox> boxes = options.Select(o => new CheckBox { Content = o, IsChecked = true }).ToList();
+        Button ok = new() { Content = "OK", MinWidth = 80, IsDefault = true };
+        Button cancel = new() { Content = "Cancel", MinWidth = 80, IsCancel = true };
+        ok.Click += (_, _) => dialog.Close(boxes.Select((b, i) => (b, i)).Where(x => x.b.IsChecked == true).Select(x => x.i).ToList());
+        cancel.Click += (_, _) => dialog.Close(null);
+
+        StackPanel list = new() { Spacing = 2 };
+        foreach (CheckBox b in boxes) list.Children.Add(b);
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxWidth = 660 },
+                new ScrollViewer { Content = list, MaxHeight = 360 },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { ok, cancel },
+                },
+            },
+        };
+
+        dialog.Opened += (_, _) => ThemeManager.StyleTitleBar(dialog);
+        return await dialog.ShowDialog<List<int>?>(_owner);
+    }
 
     public async Task<int> Choose(string message, string title, IReadOnlyList<string> options)
     {

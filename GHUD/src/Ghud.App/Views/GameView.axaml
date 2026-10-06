@@ -108,7 +108,7 @@
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
             <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
-            <DataGridTextColumn Header="Update" Binding="{Binding UpdateText}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
+            <DataGridTextColumn Header="Update" Binding="{Binding UpdateText}" Width="1.3*" IsReadOnly="True" x:DataType="vm:ModRow" />
             <DataGridTextColumn Header="Conflicts" Binding="{Binding ConflictText}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
           </DataGrid.Columns>
         </DataGrid>
@@ -130,6 +130,8 @@
           <Button Content="Game folder" Command="{Binding OpenGameFolderCommand}" />
           <Button Content="Staging" Command="{Binding OpenStagingCommand}" />
           <Button Content="Downloads" Command="{Binding OpenLibraryCommand}" />
+          <Button Content="Adopt existing mods..." Command="{Binding AdoptExistingCommand}" IsEnabled="{Binding Main.IsNotBusy}"
+                  ToolTip.Tip="Take over mod folders that were installed by hand or by another manager." />
           <Button Content="Remove game..." Command="{Binding RemoveGameCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
         </WrapPanel>
         <Border BorderThickness="1" BorderBrush="{DynamicResource Theme.Border}" CornerRadius="6" Background="{DynamicResource Theme.Surface}">

@@ -161,8 +161,29 @@ public sealed class InstanceStore
 
     // Forgets an instance: its settings, profiles and records. Staged mods and
     // the download library are only deleted when deleteStorage is set. The
-    // game folder is never touched here (undeploy first).
-    public void Delete(GameInstance i, bool deleteStorage)
+    // game folder is never touched here: either undeploy first, or leave the
+    // mods in the game (hard-linked files keep their data when the staged
+    // copy is deleted). Game files a mod had replaced (originals\) are never
+    // deleted: if any are left they move to "kept originals" in GHUD's data
+    // folder, and that path is returned.
+    public string? Delete(GameInstance i, bool deleteStorage)
+    {
+        string? keptOriginals = null;
+        string originals = i.OriginalsRoot;
+        if (Directory.Exists(originals) && Directory.EnumerateFileSystemEntries(originals).Any())
+        {
+            // Next to the instances folder (GHUD's data folder in the app).
+            string dataRoot = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(_root)) ?? _root;
+            keptOriginals = Path.Combine(dataRoot, "kept originals", i.Id + " " + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            Directory.CreateDirectory(Path.GetDirectoryName(keptOriginals)!);
+            Directory.Move(originals, keptOriginals);
+        }
+
+        DeleteRecords(i, deleteStorage);
+        return keptOriginals;
+    }
+
+    private static void DeleteRecords(GameInstance i, bool deleteStorage)
     {
         bool storageInside = i.StorageRoot == i.DataFolder;
         if (deleteStorage && !storageInside && Directory.Exists(i.StorageRoot))

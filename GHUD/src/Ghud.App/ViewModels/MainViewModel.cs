@@ -111,6 +111,8 @@ public partial class MainViewModel : ObservableObject
 
     public void ShowAccounts() => CurrentPage = new AccountsViewModel(this);
 
+    public void ShowAppearance() => CurrentPage = new AppearanceViewModel(this);
+
     // Safe to call from any thread.
     public void SetStatus(string text) => Dispatcher.UIThread.Post(() => StatusText = text);
 

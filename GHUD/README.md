@@ -4,9 +4,11 @@ A modular mod manager for any game: a solid core that downloads, stages and depl
 (hard links, load order by priority, conflicts, safe removal), plus game modules for
 each game's specifics. Windows and Linux, .NET 10.
 
-**Status:** early development (v0.2.0). Works today: add games (RimWorld, or any game
-through "General"), profiles, installing from links or archives, priority order with
-conflicts, Deploy / Undeploy. Plan, decisions and roadmap: [`Docs/STATUS.md`](Docs/STATUS.md).
+**Status:** early development (v0.3.0). Works today: add games (RimWorld, or any game
+through "General"), profiles, installing from links (GitHub, GitLab, Nexus, MEGA, MediaFire,
+Drive, Dropbox, direct) or archives, priority order with conflicts, Deploy / Undeploy,
+update checks and updates, rollback, library cleanup, export, Nexus "Mod Manager Download"
+links, LoversLab pick-up, colour schemes, adopting mods already in a game. Plan, decisions and roadmap: [`Docs/STATUS.md`](Docs/STATUS.md).
 
 ## Building and running
 Needs the .NET 10 SDK. From this folder:

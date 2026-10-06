@@ -90,6 +90,9 @@ public sealed class GeneralModule : IGameModule
         return found;
     }
 
+    public bool IsModFolder(string dir) =>
+        _s.Layout == GeneralLayout.FolderPerMod && (_s.Marker.Length == 0 || HasMarker(dir));
+
     private string? FindFolderWithMarker(string root, int maxDepth)
     {
         Queue<(string Dir, int Depth)> queue = new();

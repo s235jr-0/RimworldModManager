@@ -58,4 +58,7 @@ public partial class HomeViewModel
 
     [RelayCommand]
     private void Accounts() => Main.ShowAccounts();
+
+    [RelayCommand]
+    private void Appearance() => Main.ShowAppearance();
 }

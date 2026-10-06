@@ -116,6 +116,10 @@ public partial class GameViewModel : ObservableObject
         Refresh();
         UpdateDeployedText();
         main.StatusText = instance.Name + ": " + _mods.Catalog.Count + " mod(s) staged.";
+
+        // First visit to a game that already has mods: offer to adopt them.
+        if (_mods.Catalog.Count == 0)
+            Dispatcher.UIThread.Post(() => _ = OfferAdoption(firstTime: true), DispatcherPriority.Background);
     }
 
     // ---------------- List ----------------
@@ -507,6 +511,59 @@ public partial class GameViewModel : ObservableObject
             });
     }
 
+    // ---------------- Adopting mods already in the game ----------------
+
+    [RelayCommand]
+    private Task AdoptExisting() => OfferAdoption(firstTime: false);
+
+    private async Task OfferAdoption(bool firstTime)
+    {
+        List<string> found = _staging.FindUnmanaged(_deployer.LoadManifest());
+        if (found.Count == 0)
+        {
+            if (!firstTime)
+                await Main.Dialogs.Info(_module.LoadOrder == LoadOrderKind.FilePriority
+                    ? "Mods that merge into the game folder can't be told apart from the game's own files, so they can't be adopted. Reinstall them through GHUD instead."
+                    : "Every mod folder in " + Instance.DeployFolder + " is already managed by GHUD.");
+            return;
+        }
+
+        List<int>? picked = await Main.Dialogs.ChooseMany(
+            (firstTime ? Instance.Name + " already has " + found.Count + " mod(s) that GHUD doesn't manage yet. " : "") +
+            "Adopt the ticked ones? GHUD moves them into its staging folder (tagged Manual) and deploys them straight back, " +
+            "so the game keeps them. Unticked ones stay where they are and are never touched.",
+            "Adopt existing mods", found.Select(Path.GetFileName).ToList()!);
+        if (picked == null || picked.Count == 0) return;
+
+        List<string> folders = picked.Select(i => found[i]).ToList();
+        List<string> failed = new();
+        List<ProfileEntry> order = new();
+        DeployResult? r = null;
+
+        await Main.RunAsync(
+            () =>
+            {
+                int n = 0;
+                foreach (string f in folders)
+                {
+                    Main.SetStatus("Adopting " + (++n) + "/" + folders.Count + ": " + Path.GetFileName(f) + "...");
+                    try { _staging.Adopt(f); }
+                    catch (Exception ex) { failed.Add(Path.GetFileName(f) + ": " + ex.Message); }
+                }
+                order = _mods.Order.Select(e => new ProfileEntry(e.Key, e.Enabled)).ToList();
+                r = _deployer.Deploy(order, Main.SetStatus);
+            },
+            async () =>
+            {
+                NeedsDeploy = false;
+                Refresh();
+                UpdateDeployedText();
+                Main.StatusText = (folders.Count - failed.Count) + " mod(s) adopted and deployed back into the game.";
+                if (failed.Count > 0)
+                    await Main.Dialogs.Warning("These could not be adopted:\n\n" + String.Join("\n", failed));
+            });
+    }
+
     [RelayCommand]
     private void ClearPending()
     {
@@ -758,24 +815,37 @@ public partial class GameViewModel : ObservableObject
     [RelayCommand]
     private async Task RemoveGame()
     {
-        if (!await Main.Dialogs.Confirm("Remove \"" + Instance.Name + "\" from GHUD?\n\n" +
-                                        "GHUD first takes its mod files out of the game folder (Undeploy). The game itself is not touched.",
-                                        "Remove game"))
-            return;
-        bool deleteStorage = await Main.Dialogs.Confirm("Also delete its staged mods and download library (" + Instance.StorageRoot + ")?\n\n" +
-                                                        "No = keep them on disk.", "Remove game");
+        int what = await Main.Dialogs.Choose(
+            "Remove \"" + Instance.Name + "\" from GHUD. What should happen to the mods GHUD put into the game?",
+            "Remove game", new[]
+            {
+                "Leave them in the game: they stay installed, GHUD just stops managing them",
+                "Take them out of the game and put back the game's own files",
+            });
+        if (what < 0) return;
+        bool undeploy = what == 1;
 
+        bool deleteStorage = await Main.Dialogs.Confirm(
+            "Also delete GHUD's copies (staged mods and download library in " + Instance.StorageRoot + ")?\n\n" +
+            (undeploy ? "Mods taken out of the game then only exist in your downloads elsewhere, if at all.\n\n"
+                      : "The mods left in the game are not affected.\n\n") +
+            "No = keep them on disk.", "Remove game");
+
+        string? keptOriginals = null;
         await Main.RunAsync(
             () =>
             {
-                _deployer.Undeploy(Main.SetStatus);
-                Main.Store.Delete(Instance, deleteStorage);
-                Main.Log.Add("DELETE", "Removed " + Instance.Name + " from GHUD" + (deleteStorage ? " with its staged mods." : "."));
+                if (undeploy) _deployer.Undeploy(Main.SetStatus);
+                keptOriginals = Main.Store.Delete(Instance, deleteStorage);
+                Main.Log.Add("DELETE", "Removed " + Instance.Name + " from GHUD (" + (undeploy ? "mods taken out of the game" : "mods left in the game") +
+                                       (deleteStorage ? ", staged copies deleted)." : ")."));
+                if (keptOriginals != null) Main.Log.Add("BACKUP", "Game files the mods had replaced were kept in " + keptOriginals);
             },
-            () =>
+            async () =>
             {
                 Main.GoHome();
-                return Task.CompletedTask;
+                if (keptOriginals != null)
+                    await Main.Dialogs.Info("The game's own files that mods had replaced were kept here, in case you want them back:\n\n" + keptOriginals);
             });
     }
 }

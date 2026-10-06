@@ -85,6 +85,56 @@ public sealed class Staging
         return staged;
     }
 
+    // ---------------- Adopting mods already in the game ----------------
+
+    // Mod folders in the deploy folder that GHUD didn't put there.
+    public List<string> FindUnmanaged(DeploymentManifest manifest)
+    {
+        List<string> list = new();
+        if (!Directory.Exists(_instance.DeployFolder)) return list;
+
+        HashSet<string> managedTops = new(StringComparer.OrdinalIgnoreCase);
+        foreach (string rel in manifest.Files.Keys)
+        {
+            int cut = rel.IndexOfAny(new[] { '\\', '/' });
+            if (cut > 0) managedTops.Add(rel.Substring(0, cut));
+        }
+
+        foreach (string dir in Directory.GetDirectories(_instance.DeployFolder))
+        {
+            if (SafeFileSystem.IsLink(dir) || managedTops.Contains(Path.GetFileName(dir))) continue;
+            if (_module.IsModFolder(dir)) list.Add(dir);
+        }
+        return list.OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    // Moves a mod folder from the game into staging (tagged Manual) and adds
+    // it, enabled, to the active profile. Deploy right after to put it back.
+    public StagedMod Adopt(string folder)
+    {
+        if (!_module.IsModFolder(folder)) throw new Exception(Path.GetFileName(folder) + " isn't a mod folder for " + _module.DisplayName + ".");
+
+        string folderName = Path.GetFileName(folder);
+        ModCandidate? c = _module.FindMods(folder).FirstOrDefault();   // just this folder: its name and game ID
+        string name = c?.Name ?? folderName;
+        string key = NewKey(name);
+        string target = Path.Combine(_instance.StagingRoot, key, folderName);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+
+        try { Directory.Move(folder, target); }            // same drive: instant
+        catch (IOException)
+        {
+            SafeFileSystem.CopyDirectory(folder, target);  // another drive: copy, then remove
+            SafeFileSystem.DeleteDirectory(folder);
+        }
+
+        StagedMod m = new() { Key = key, Name = name, ModId = c?.Id, Source = ModSource.Manual, InstalledUtc = DateTime.UtcNow };
+        _mods.Add(m);
+        _mods.Save();
+        _log.Add("INSTALL", "[Manual] " + name + " adopted from the game folder (" + _instance.Name + ")");
+        return m;
+    }
+
     // Removes a mod from staging and every profile. Deploy afterwards to take
     // its files out of the game. Its archive stays in the download library.
     public void Remove(string key)

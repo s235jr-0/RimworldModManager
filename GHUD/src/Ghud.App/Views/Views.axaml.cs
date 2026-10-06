@@ -26,6 +26,11 @@ public partial class AccountsView : UserControl
     public AccountsView() => AvaloniaXamlLoader.Load(this);
 }
 
+public partial class AppearanceView : UserControl
+{
+    public AppearanceView() => AvaloniaXamlLoader.Load(this);
+}
+
 public partial class GameView : UserControl
 {
     public GameView() => AvaloniaXamlLoader.Load(this);

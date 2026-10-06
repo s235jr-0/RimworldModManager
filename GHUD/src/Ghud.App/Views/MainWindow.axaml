@@ -15,6 +15,7 @@
     <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
     <DataTemplate DataType="vm:AddGameViewModel"><views:AddGameView /></DataTemplate>
     <DataTemplate DataType="vm:AccountsViewModel"><views:AccountsView /></DataTemplate>
+    <DataTemplate DataType="vm:AppearanceViewModel"><views:AppearanceView /></DataTemplate>
     <DataTemplate DataType="vm:GameViewModel"><views:GameView /></DataTemplate>
   </Window.DataTemplates>
 

@@ -78,6 +78,8 @@ public sealed class RimWorldModule : IGameModule
         return found;
     }
 
+    public bool IsModFolder(string dir) => FindAboutXml(dir) != null;
+
     // About/About.xml, matched case-insensitively (Linux file systems aren't).
     private static string? FindAboutXml(string modDir)
     {
