@@ -24,6 +24,25 @@ public sealed class StagedMod
     // The archive in the instance's download library (downloads\).
     public string? FileName { get; set; }
     public DateTime InstalledUtc { get; set; }
+
+    // Earlier archives of this mod still in the library (newest first), for
+    // rolling back.
+    public List<ArchiveVersion> History { get; set; } = new();
+
+    // Library cleanup never deletes this mod's archives.
+    public bool KeepAllVersions { get; set; }
+}
+
+// One archive of a mod in the download library.
+public sealed class ArchiveVersion
+{
+    public string FileName { get; set; } = "";
+    public string? Version { get; set; }
+    public long RemoteUpdated { get; set; }
+    public DateTime InstalledUtc { get; set; }
+
+    public string Label => (String.IsNullOrEmpty(Version) ? FileName : Version + "  (" + FileName + ")") +
+                           "  installed " + InstalledUtc.ToLocalTime().ToString("yyyy-MM-dd");
 }
 
 // A mod's place and on/off state in one profile.

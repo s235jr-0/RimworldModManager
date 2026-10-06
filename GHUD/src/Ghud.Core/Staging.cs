@@ -31,7 +31,10 @@ public sealed class Staging
     // staged (same game ID, else same name) is replaced in place and keeps
     // its position and on/off state in every profile; new mods go to the
     // bottom (highest priority), enabled in the active profile.
-    public List<StagedMod> InstallArchive(string archivePath, ArchiveOrigin origin, Action<string>? status = null)
+    // updateKey: the mod this archive is a new (or older) version of, when the
+    // caller knows it (Update, Roll back). Used when the archive holds one mod,
+    // since names taken from file names ("Mod-1.2.zip") change between versions.
+    public List<StagedMod> InstallArchive(string archivePath, ArchiveOrigin origin, Action<string>? status = null, string? updateKey = null)
     {
         string work = Path.Combine(_instance.TempRoot, Guid.NewGuid().ToString("N"));
         try
@@ -49,7 +52,8 @@ public sealed class Staging
             {
                 string name = c.Name == "Mod" || c.Name.Length == 0 ? fallbackName : c.Name;
                 status?.Invoke("Staging " + name + "...");
-                staged.Add(StageOne(c, name, origin, Path.GetFileName(libraryFile)));
+                StagedMod? target = updateKey != null && candidates.Count == 1 ? _mods.Find(updateKey) : null;
+                staged.Add(StageOne(c, target?.Name ?? name, origin, Path.GetFileName(libraryFile), target));
             }
 
             _mods.Save();
@@ -59,6 +63,26 @@ public sealed class Staging
         {
             try { if (Directory.Exists(work)) SafeFileSystem.DeleteDirectory(work); } catch { }
         }
+    }
+
+    // Re-stages an earlier archive of a mod from the library. Its origin
+    // (link, update ID) stays; the version goes back to that archive's.
+    public List<StagedMod> RollBack(StagedMod mod, ArchiveVersion version, Action<string>? status = null)
+    {
+        string archive = Path.Combine(_instance.DownloadsRoot, version.FileName);
+        if (!File.Exists(archive))
+            throw new Exception("That archive is no longer in the download library: " + version.FileName);
+
+        List<StagedMod> staged = InstallArchive(archive,
+            new ArchiveOrigin(mod.Source, mod.Url, mod.RemoteId, version.Version, version.RemoteUpdated), status, mod.Key);
+        foreach (StagedMod m in staged.Where(m => m.Key == mod.Key))
+        {
+            m.Version = version.Version;           // exactly that archive's, even when unknown
+            m.RemoteUpdated = version.RemoteUpdated;
+        }
+        _mods.Save();
+        _log.Add("INSTALL", "Rolled back " + mod.Name + " to " + (version.Version ?? version.FileName) + " (" + _instance.Name + ")");
+        return staged;
     }
 
     // Removes a mod from staging and every profile. Deploy afterwards to take
@@ -110,9 +134,9 @@ public sealed class Staging
         }
     }
 
-    private StagedMod StageOne(ModCandidate c, string name, ArchiveOrigin origin, string libraryFile)
+    private StagedMod StageOne(ModCandidate c, string name, ArchiveOrigin origin, string libraryFile, StagedMod? target = null)
     {
-        StagedMod? existing =
+        StagedMod? existing = target ??
             (c.Id != null ? _mods.Catalog.FirstOrDefault(m => String.Equals(m.ModId, c.Id, StringComparison.OrdinalIgnoreCase)) : null)
             ?? _mods.Catalog.FirstOrDefault(m => m.ModId == null && m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
@@ -132,6 +156,20 @@ public sealed class Staging
         if (Directory.Exists(old)) SafeFileSystem.DeleteDirectory(old);
 
         StagedMod m = existing ?? new StagedMod { Key = key };
+
+        // The archive it had until now becomes history (for rollback).
+        if (existing?.FileName != null && existing.FileName != libraryFile)
+        {
+            m.History.RemoveAll(h => h.FileName == existing.FileName || h.FileName == libraryFile);
+            m.History.Insert(0, new ArchiveVersion
+            {
+                FileName = existing.FileName, Version = existing.Version,
+                RemoteUpdated = existing.RemoteUpdated, InstalledUtc = existing.InstalledUtc,
+            });
+            if (m.History.Count > 20) m.History.RemoveRange(20, m.History.Count - 20);
+        }
+        m.History.RemoveAll(h => h.FileName == libraryFile);
+
         m.Name = name;
         m.ModId = c.Id;
         m.Source = origin.Source;

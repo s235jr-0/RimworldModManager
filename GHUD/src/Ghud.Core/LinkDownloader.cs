@@ -15,6 +15,23 @@ public sealed class BrowserStepRequired : Exception
     }
 }
 
+public enum UpdateState { Current, UpdateAvailable, Unknown, NoCheck, CheckOnPage, Missing }
+
+// Result of an update check: the state, the newest version's label, and a
+// short text for the list.
+public sealed record UpdateResult(UpdateState State, string Latest)
+{
+    public string Text => State switch
+    {
+        UpdateState.Current => "Current",
+        UpdateState.UpdateAvailable => "Update: " + Latest,
+        UpdateState.Unknown => "Unknown (update once)",
+        UpdateState.CheckOnPage => "Check the page",
+        UpdateState.Missing => "Removed at source",
+        _ => "No update check",
+    };
+}
+
 // Turns a pasted link into an archive in the instance's download library,
 // with where it came from (source tag, version, update-check ID).
 public sealed class LinkDownloader
@@ -101,6 +118,68 @@ public sealed class LinkDownloader
             default:
                 throw new Exception("Not a link GHUD understands: " + link);
         }
+    }
+
+    // ---------------- Updates ----------------
+
+    // Asks the mod's source for its newest version. Mods from a file or a
+    // plain link have nothing to ask; LoversLab only answers browsers.
+    public UpdateResult Check(StagedMod m)
+    {
+        string remote = m.RemoteId ?? "";
+        switch (m.Source)
+        {
+            case ModSource.Git when remote.StartsWith("github:") && m.Url != null:
+            {
+                RemoteVersion v = GitHubSource.Latest(GitHubSource.Parse(m.Url), Secret(SecretNames.GitHubToken));
+                return new UpdateResult(GitState(m, v), v.Label);
+            }
+
+            case ModSource.Git when remote.StartsWith("gitlab:") && m.Url != null:
+            {
+                RemoteVersion v = GitLabSource.Latest(GitLabSource.Parse(m.Url), Secret(SecretNames.GitLabToken));
+                return new UpdateResult(GitState(m, v), v.Label);
+            }
+
+            case ModSource.Nexus when int.TryParse(remote, out int modId) && _nexusGame != null:
+            {
+                Nexus.NexusFile? latest = new NexusClient(Secret(SecretNames.NexusApiKey) ?? "", _nexusGame).LatestMainFile(modId);
+                if (latest == null) return new UpdateResult(UpdateState.Missing, "");
+                string label = String.IsNullOrWhiteSpace(latest.Version) ? "file " + latest.FileId : latest.Version;
+                return new UpdateResult(latest.Uploaded > m.RemoteUpdated ? UpdateState.UpdateAvailable : UpdateState.Current, label);
+            }
+
+            case ModSource.LoversLab:
+                return new UpdateResult(UpdateState.CheckOnPage, "");
+
+            default:
+                return new UpdateResult(UpdateState.NoCheck, "");
+        }
+    }
+
+    // A file link doesn't know its version: "Unknown" until updated once.
+    private static UpdateState GitState(StagedMod m, RemoteVersion latest) =>
+        String.IsNullOrEmpty(m.Version) ? UpdateState.Unknown :
+        latest.Version == m.Version ? UpdateState.Current :
+        UpdateState.UpdateAvailable;
+
+    // Downloads the newest version from where the mod came from.
+    public (string Archive, ArchiveOrigin Origin) DownloadUpdate(StagedMod m, string libraryDir, Action<string> status)
+    {
+        if (m.Source == ModSource.LoversLab)
+            throw new BrowserStepRequired(ModSource.LoversLab, m.Url ?? "https://www.loverslab.com/",
+                "Download the new version of " + m.Name + " from LoversLab in your browser, then install it from the file.");
+
+        if (m.Source == ModSource.Nexus && int.TryParse(m.RemoteId, out int modId))
+        {
+            if (_nexusGame == null) throw new Exception("This game has no Nexus Mods name set.");
+            return DownloadNexus(modId, libraryDir, status);
+        }
+
+        if (String.IsNullOrWhiteSpace(m.Url) || !Uri.TryCreate(m.Url, UriKind.Absolute, out _))
+            throw new Exception(m.Name + " was installed from a file on this computer; there is no link to update it from.");
+
+        return Download(m.Url, libraryDir, status);
     }
 
     private (string, ArchiveOrigin) DownloadNexus(int modId, string libraryDir, Action<string> status)
