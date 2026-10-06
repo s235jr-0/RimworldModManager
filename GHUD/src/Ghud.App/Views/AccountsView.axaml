@@ -13,7 +13,7 @@
       <TextBlock Opacity="0.8" TextWrapping="Wrap"
                  Text="All optional. GitHub and GitLab work without a token; Nexus needs your personal API key. No passwords are stored." />
 
-      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
         <TextBlock Text="GitHub token" VerticalAlignment="Center" />
         <TextBox Grid.Column="1" Text="{Binding GitHubToken}" PasswordChar="●" AutomationProperties.Name="GitHub token"
                  PlaceholderText="Raises GitHub's limit from 60 to 5,000 requests per hour" />
@@ -32,6 +32,16 @@
           <Button Content="Check key" Command="{Binding CheckNexusKeyCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
         </StackPanel>
         <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NexusAccountText}" Opacity="0.8" TextWrapping="Wrap" />
+
+        <TextBlock Grid.Row="4" Text="Nexus download buttons" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding NexusHandlerText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button Grid.Row="4" Grid.Column="2" Content="Handle Nexus links" Command="{Binding RegisterNexusHandlerCommand}"
+                ToolTip.Tip="Makes 'Mod Manager Download' on nexusmods.com send the file to GHUD (needed for free accounts)." />
+
+        <TextBlock Grid.Row="5" Text="Downloads folder" VerticalAlignment="Center" />
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DownloadsFolder}" AutomationProperties.Name="Downloads folder"
+                 ToolTip.Tip="Watched for LoversLab downloads you finish in the browser." />
+        <Button Grid.Row="5" Grid.Column="2" Content="Browse" Command="{Binding BrowseDownloadsFolderCommand}" />
       </Grid>
 
       <StackPanel Orientation="Horizontal" Spacing="10">

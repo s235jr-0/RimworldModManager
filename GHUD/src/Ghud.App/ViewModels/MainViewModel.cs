@@ -18,6 +18,7 @@ public partial class MainViewModel : ObservableObject
     public InstanceStore Store { get; }
     public ISecretStore Secrets { get; }
     public ThemeManager Theme { get; }
+    public GhudSettings Settings { get; }
 
     public string Title => AppTitle;
 
@@ -35,6 +36,12 @@ public partial class MainViewModel : ObservableObject
 
     public bool IsNotBusy => !IsBusy;
 
+    // Leaving a game's screen (any way) stops its Downloads-folder watcher.
+    partial void OnCurrentPageChanged(object? oldValue, object? newValue)
+    {
+        if (oldValue is GameViewModel game && !ReferenceEquals(oldValue, newValue)) game.Leave();
+    }
+
     public MainViewModel(IDialogs dialogs, ThemeManager theme)
     {
         Dialogs = dialogs;
@@ -42,12 +49,58 @@ public partial class MainViewModel : ObservableObject
         Log = new ActivityLog(GhudPaths.LogsDir);
         Store = new InstanceStore(GhudPaths.InstancesRoot);
         Secrets = new SecretStore();
+        Settings = GhudSettings.Load(GhudPaths.SettingsFile);
 
         foreach (LogLine line in Log.ReadToday()) LogLines.Add(line);
         Log.LineAdded += line => Dispatcher.UIThread.Post(() => LogLines.Add(line));
         Log.Add("INFO", AppTitle + " started.");
 
         GoHome();
+
+        NexusLinks.Listen(message => Dispatcher.UIThread.Post(() => OnForwardedMessage(message)));
+        if (Program.StartupLink is { } link)
+            Dispatcher.UIThread.Post(() => OnForwardedMessage(link), DispatcherPriority.Background);
+    }
+
+    // From a second GHUD start: "activate", or an nxm:// link to install.
+    private void OnForwardedMessage(string message)
+    {
+        Dialogs.BringToFront();
+        if (message.StartsWith("nxm://", StringComparison.OrdinalIgnoreCase))
+            _ = HandleNxm(message);
+    }
+
+    // Sends a Nexus download to the game it is for (the link names the game).
+    public async Task HandleNxm(string link)
+    {
+        Nexus.NxmLink parsed;
+        try { parsed = Nexus.ParseNxm(link); }
+        catch (Exception ex) { await Dialogs.Error(ex.Message); return; }
+
+        if (CurrentPage is GameViewModel open && open.NexusGame == parsed.Game)
+        {
+            await open.InstallNxm(link);
+            return;
+        }
+
+        List<GameInstance> games = Store.All().Where(i => i.CreateModule().NexusDomain == parsed.Game).ToList();
+        if (games.Count == 0)
+        {
+            await Dialogs.Info("A Nexus download for \"" + parsed.Game + "\" arrived, but no game in GHUD uses that Nexus name.\n\n" +
+                               "Add the game first (for other games: set its Nexus name when adding it), then click the button on Nexus again.");
+            return;
+        }
+
+        GameInstance target = games[0];
+        if (games.Count > 1)
+        {
+            int pick = await Dialogs.Choose("Which game should this Nexus download go to?", "Nexus download", games.Select(g => g.Name).ToList());
+            if (pick < 0) return;
+            target = games[pick];
+        }
+
+        OpenGame(target);
+        if (CurrentPage is GameViewModel game) await game.InstallNxm(link);
     }
 
     public void GoHome() => CurrentPage = new HomeViewModel(this);

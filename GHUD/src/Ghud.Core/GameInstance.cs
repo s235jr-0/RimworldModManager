@@ -15,6 +15,31 @@ public static class GhudPaths
 
     public static string LogsDir => Path.Combine(DataRoot, "logs");
 
+    public static string SettingsFile => Path.Combine(DataRoot, "settings.json");
+
+    // The user's Downloads folder. Linux desktops record it in
+    // ~/.config/user-dirs.dirs (XDG_DOWNLOAD_DIR, localized on some systems).
+    public static string DefaultDownloadsFolder()
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!OperatingSystem.IsWindows())
+        {
+            try
+            {
+                string dirs = Path.Combine(home, ".config", "user-dirs.dirs");
+                if (File.Exists(dirs))
+                    foreach (string line in File.ReadAllLines(dirs))
+                    {
+                        if (!line.StartsWith("XDG_DOWNLOAD_DIR=")) continue;
+                        string value = line.Substring("XDG_DOWNLOAD_DIR=".Length).Trim('"').Replace("$HOME", home);
+                        if (value.Length > 0) return value;
+                    }
+            }
+            catch { }
+        }
+        return Path.Combine(home, "Downloads");
+    }
+
     // Colour schemes (shared format with the RimWorld Mod Manager).
     public static string ThemesFile => Path.Combine(DataRoot, "themes.json");
 

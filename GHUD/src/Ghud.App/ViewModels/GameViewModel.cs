@@ -6,6 +6,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Ghud.App.ViewModels;
 
+// A download waiting for the user to finish it in the browser.
+public sealed record PendingDownload(ModSource Source, string PageUrl, string Text);
+
 // One row of a game's mod list (the active profile).
 public partial class ModRow : ObservableObject
 {
@@ -20,6 +23,8 @@ public partial class ModRow : ObservableObject
     [ObservableProperty] public partial int Position { get; set; }
     [ObservableProperty] public partial bool Enabled { get; set; }
     [ObservableProperty] public partial string ConflictText { get; set; } = "";
+    [ObservableProperty] public partial string UpdateText { get; set; } = "";
+    public UpdateState? UpdateState { get; set; }
 
     public ModRow(StagedMod mod, bool enabled, int position)
     {
@@ -54,6 +59,13 @@ public partial class GameViewModel : ObservableObject
     public ObservableCollection<ModRow> Rows { get; } = new();
     public ObservableCollection<string> Profiles { get; } = new();
 
+    // Downloads the user has to finish in the browser (LoversLab, Nexus free).
+    public ObservableCollection<PendingDownload> Pending { get; } = new();
+    public bool HasPending => Pending.Count > 0;
+    private DownloadWatcher? _watcher;
+
+    public string? NexusGame => _module.NexusDomain;
+
     public string GameName => Instance.Name;
     public string ModuleName => _module.DisplayName + (Instance.ModuleId == "general" ? " (General)" : "");
     public string FoldersText =>
@@ -74,6 +86,19 @@ public partial class GameViewModel : ObservableObject
     [ObservableProperty] public partial string DeployedText { get; set; } = "";
 
     public bool HasSelection => SelectedRow != null;
+    public bool CanRollBack => SelectedRow?.Mod.History.Count > 0;
+
+    public bool SelectedKeepAll
+    {
+        get => SelectedRow?.Mod.KeepAllVersions ?? false;
+        set
+        {
+            if (SelectedRow == null || SelectedRow.Mod.KeepAllVersions == value) return;
+            SelectedRow.Mod.KeepAllVersions = value;
+            _mods.Save();
+            OnPropertyChanged();
+        }
+    }
     public string DeployHint => NeedsDeploy ? "Changes aren't in the game yet: press Deploy." : "";
 
     public GameViewModel(MainViewModel main, GameInstance instance)
@@ -86,6 +111,7 @@ public partial class GameViewModel : ObservableObject
         _deployer = new Deployer(instance, main.Log);
         _links = new LinkDownloader(main.Secrets, _module.NexusDomain);
 
+        Pending.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasPending));
         ReloadProfiles();
         Refresh();
         UpdateDeployedText();
@@ -107,11 +133,13 @@ public partial class GameViewModel : ObservableObject
     private void Refresh()
     {
         string? selected = SelectedRow?.Key;
+        Dictionary<string, (string Text, UpdateState? State)> updates = Rows.ToDictionary(r => r.Key, r => (r.UpdateText, r.UpdateState));
         Rows.Clear();
         int n = 1;
         foreach ((StagedMod mod, ProfileEntry entry) in _mods.Current())
         {
             ModRow row = new(mod, entry.Enabled, n++);
+            if (updates.TryGetValue(mod.Key, out var u)) { row.UpdateText = u.Text; row.UpdateState = u.State; }
             row.Attach(this);
             Rows.Add(row);
         }
@@ -148,7 +176,12 @@ public partial class GameViewModel : ObservableObject
 
     private string NameOf(string key) => _mods.Find(key)?.Name ?? key;
 
-    partial void OnSelectedRowChanged(ModRow? value) => UpdateDetails();
+    partial void OnSelectedRowChanged(ModRow? value)
+    {
+        UpdateDetails();
+        OnPropertyChanged(nameof(SelectedKeepAll));
+        OnPropertyChanged(nameof(CanRollBack));
+    }
 
     private void UpdateDetails()
     {
@@ -169,6 +202,13 @@ public partial class GameViewModel : ObservableObject
         if (!String.IsNullOrEmpty(m.ModId)) sb.AppendLine("Game ID:    " + m.ModId);
         sb.AppendLine("Installed:  " + m.InstalledUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
         if (!String.IsNullOrEmpty(m.FileName)) sb.AppendLine("Archive:    " + m.FileName);
+        if (!String.IsNullOrEmpty(r.UpdateText)) sb.AppendLine("Update:     " + r.UpdateText);
+        if (m.History.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Earlier versions (Roll back):");
+            foreach (ArchiveVersion h in m.History.Take(10)) sb.AppendLine("  " + h.Label);
+        }
 
         if (_conflicts.TryGetValue(r.Key, out var v))
         {
@@ -327,7 +367,7 @@ public partial class GameViewModel : ObservableObject
             async () =>
             {
                 if (installed.Count > 0) LinksInput = "";
-                foreach (BrowserStepRequired s in steps) Main.Dialogs.OpenUrl(s.OpenUrl);
+                foreach (BrowserStepRequired s in steps) BeginBrowserStep(s);
                 AfterInstall();
                 await ShowInstallSummary(installed, failed, steps);
             });
@@ -371,7 +411,7 @@ public partial class GameViewModel : ObservableObject
         if (steps.Count > 0)
         {
             if (sb.Length > 0) sb.AppendLine();
-            sb.AppendLine("Finish these in your browser (the pages were opened), then use \"Install from file...\":");
+            sb.AppendLine("Finish these in your browser (the pages were opened); GHUD takes it from there:");
             foreach (BrowserStepRequired s in steps) sb.AppendLine("  - " + s.Message);
         }
         if (failed.Count > 0)
@@ -384,6 +424,97 @@ public partial class GameViewModel : ObservableObject
 
         return failed.Count > 0 ? Main.Dialogs.Warning(sb.ToString()) : Main.Dialogs.Info(sb.ToString());
     }
+
+    // ---------------- Browser steps ----------------
+
+    // Opens the page and waits: Nexus sends an nxm:// link back to GHUD;
+    // LoversLab files are picked up from the Downloads folder.
+    private void BeginBrowserStep(BrowserStepRequired step)
+    {
+        Pending.Add(new PendingDownload(step.SourceKind, step.OpenUrl,
+            (step.SourceKind == ModSource.LoversLab ? "LoversLab: download the file in your browser" : "Nexus: click \"Mod Manager Download\"") +
+            " (" + step.OpenUrl + ")"));
+        Main.Dialogs.OpenUrl(step.OpenUrl);
+        if (step.SourceKind == ModSource.LoversLab) StartWatcher();
+    }
+
+    private void StartWatcher()
+    {
+        if (_watcher != null) return;
+        string folder = Main.Settings.DownloadsFolder ?? GhudPaths.DefaultDownloadsFolder();
+        try
+        {
+            _watcher = new DownloadWatcher(folder);
+            _watcher.ArchiveArrived += path => Dispatcher.UIThread.Post(() => _ = OnArchiveArrived(path));
+            Main.StatusText = "Watching " + folder + " for the LoversLab download...";
+        }
+        catch (Exception ex)
+        {
+            _watcher = null;
+            Main.Log.Add("ERROR", "Can't watch the Downloads folder (" + folder + "): " + ex.Message);
+        }
+    }
+
+    private void StopWatcher()
+    {
+        _watcher?.Dispose();
+        _watcher = null;
+    }
+
+    // A finished archive in Downloads: the oldest waiting LoversLab item.
+    private async Task OnArchiveArrived(string path)
+    {
+        PendingDownload? item = Pending.FirstOrDefault(p => p.Source == ModSource.LoversLab);
+        if (item == null) return;
+        Pending.Remove(item);
+        if (!Pending.Any(p => p.Source == ModSource.LoversLab)) StopWatcher();
+
+        Main.Log.Add("DOWNLOAD", "[LoversLab] picked up " + Path.GetFileName(path));
+        List<string> installed = new();
+        await Main.RunAsync(
+            () =>
+            {
+                foreach (StagedMod m in _staging.InstallArchive(path, new ArchiveOrigin(ModSource.LoversLab, item.PageUrl), Main.SetStatus))
+                    installed.Add("[LoversLab] " + m.Name);
+            },
+            async () =>
+            {
+                AfterInstall();
+                await ShowInstallSummary(installed, new(), new());
+            });
+    }
+
+    // A Nexus "Mod Manager Download" link for this game.
+    public async Task InstallNxm(string link)
+    {
+        PendingDownload? item = Pending.FirstOrDefault(p => p.Source == ModSource.Nexus);
+        if (item != null) Pending.Remove(item);
+
+        List<string> installed = new(), failed = new();
+        await Main.RunAsync(
+            () =>
+            {
+                (string archive, ArchiveOrigin origin) = _links.DownloadNxm(link, Instance.DownloadsRoot, Main.SetStatus);
+                Nexus.NxmLink parsed = Nexus.ParseNxm(link);
+                StagedMod? existing = _mods.Catalog.FirstOrDefault(m => m.Source == ModSource.Nexus && m.RemoteId == parsed.ModId.ToString());
+                foreach (StagedMod m in _staging.InstallArchive(archive, origin, Main.SetStatus, existing?.Key))
+                    installed.Add("[Nexus] " + m.Name);
+            },
+            async () =>
+            {
+                AfterInstall();
+                await ShowInstallSummary(installed, failed, new());
+            });
+    }
+
+    [RelayCommand]
+    private void ClearPending()
+    {
+        Pending.Clear();
+        StopWatcher();
+    }
+
+    public void Leave() => StopWatcher();
 
     [RelayCommand]
     private async Task RemoveMod()
@@ -401,6 +532,171 @@ public partial class GameViewModel : ObservableObject
             Refresh();
             return Task.CompletedTask;
         });
+    }
+
+    // ---------------- Updates / versions / library ----------------
+
+    [RelayCommand]
+    private async Task CheckUpdates()
+    {
+        List<ModRow> rows = Rows.ToList();
+        Dictionary<string, UpdateResult> results = new();
+        List<string> errors = new();
+
+        await Main.RunAsync(
+            () =>
+            {
+                int n = 0;
+                foreach (ModRow r in rows)
+                {
+                    Main.SetStatus("Checking for updates " + (++n) + "/" + rows.Count + ": " + r.Name + "...");
+                    try { results[r.Key] = _links.Check(r.Mod); }
+                    catch (Exception ex) { errors.Add(r.Name + ": " + ex.Message); }
+                }
+            },
+            async () =>
+            {
+                foreach (ModRow r in Rows)
+                {
+                    if (results.TryGetValue(r.Key, out UpdateResult? u)) { r.UpdateText = u.Text; r.UpdateState = u.State; }
+                    else if (errors.Any(e => e.StartsWith(r.Name + ":"))) { r.UpdateText = "Check failed"; r.UpdateState = null; }
+                }
+                UpdateDetails();
+                int available = results.Values.Count(u => u.State == UpdateState.UpdateAvailable);
+                Main.StatusText = "Update check: " + available + " update(s) available" + (errors.Count > 0 ? ", " + errors.Count + " check(s) failed." : ".");
+                Main.Log.Add("CHECK", Instance.Name + ": " + rows.Count + " mod(s) checked, " + available + " update(s) available.");
+                if (errors.Count > 0)
+                    await Main.Dialogs.Warning("Some checks failed:\n\n" + String.Join("\n", errors.Take(12)));
+            });
+    }
+
+    [RelayCommand]
+    private Task UpdateSelected() => SelectedRow == null ? Task.CompletedTask : UpdateMods(new List<ModRow> { SelectedRow });
+
+    [RelayCommand]
+    private async Task UpdateOutdated()
+    {
+        List<ModRow> rows = Rows.Where(r => r.UpdateState is UpdateState.UpdateAvailable or UpdateState.Unknown).ToList();
+        if (rows.Count == 0)
+        {
+            await Main.Dialogs.Info("Nothing marked \"Update\" or \"Unknown\". Press \"Check updates\" first.");
+            return;
+        }
+        await UpdateMods(rows);
+    }
+
+    private async Task UpdateMods(List<ModRow> rows)
+    {
+        List<string> updated = new(), failed = new();
+        List<BrowserStepRequired> steps = new();
+
+        await Main.RunAsync(
+            () =>
+            {
+                foreach (ModRow r in rows)
+                {
+                    try
+                    {
+                        (string archive, ArchiveOrigin origin) = _links.DownloadUpdate(r.Mod, Instance.DownloadsRoot, Main.SetStatus);
+                        foreach (StagedMod m in _staging.InstallArchive(archive, origin, Main.SetStatus, r.Key))
+                            updated.Add("[" + ModSourceTags.Tag(m.Source) + "] " + m.Name + (String.IsNullOrEmpty(m.Version) ? "" : " " + m.Version));
+                    }
+                    catch (BrowserStepRequired step) { steps.Add(step); }
+                    catch (Exception ex)
+                    {
+                        failed.Add(r.Name + ": " + ex.Message);
+                        Main.Log.Add("ERROR", "Update of " + r.Name + " failed: " + ex.Message);
+                    }
+                }
+            },
+            async () =>
+            {
+                foreach (BrowserStepRequired s in steps) BeginBrowserStep(s);
+                foreach (ModRow r in Rows.Where(r => rows.Any(x => x.Key == r.Key) && updated.Count > 0)) { r.UpdateText = ""; r.UpdateState = null; }
+                AfterInstall();
+                await ShowInstallSummary(updated, failed, steps);
+            });
+    }
+
+    [RelayCommand]
+    private async Task RollBack()
+    {
+        ModRow? row = SelectedRow;
+        if (row == null || row.Mod.History.Count == 0) return;
+
+        int pick = await Main.Dialogs.Choose("Roll " + row.Name + " back to which version? (The current one stays in the library.)",
+                                             "Roll back", row.Mod.History.Select(h => h.Label).ToList());
+        if (pick < 0) return;
+        ArchiveVersion version = row.Mod.History[pick];
+
+        await Main.RunAsync(() => _staging.RollBack(row.Mod, version, Main.SetStatus), () =>
+        {
+            AfterInstall();
+            Main.StatusText = row.Name + " rolled back to " + (version.Version ?? version.FileName) + ": press Deploy.";
+            return Task.CompletedTask;
+        });
+    }
+
+    [RelayCommand]
+    private async Task CleanupLibrary()
+    {
+        string? text = await Main.Dialogs.Prompt("Delete archives older than how many days?\n" +
+            "A mod's current archive is always kept, and so is every archive of a mod marked \"Keep all versions\".",
+            "Clean up download library", "30");
+        if (text == null) return;
+        if (!int.TryParse(text.Trim(), out int days) || days < 0) { await Main.Dialogs.Info("Enter a number of days."); return; }
+
+        Library.CleanupResult? preview = null;
+        long total = 0;
+        await Main.RunAsync(() => { preview = Library.Cleanup(Instance, _mods, days, dryRun: true); total = Library.Size(Instance); }, async () =>
+        {
+            if (preview!.Deleted == 0)
+            {
+                await Main.Dialogs.Info("Nothing to delete. The library holds " + Sizes.Format(total) + ".");
+                return;
+            }
+            if (!await Main.Dialogs.Confirm("Delete " + preview.Deleted + " archive(s), " + Sizes.Format(preview.Bytes) + " of " + Sizes.Format(total) + "?\n\n" +
+                                            String.Join("\n", preview.Files.Take(15)) + (preview.Files.Count > 15 ? "\n..." : ""), "Clean up download library"))
+                return;
+
+            Library.CleanupResult? done = null;
+            await Main.RunAsync(() => done = Library.Cleanup(Instance, _mods, days, dryRun: false, Main.Log), () =>
+            {
+                Main.StatusText = "Library cleanup: " + done!.Deleted + " archive(s) deleted, " + Sizes.Format(done.Bytes) + " freed.";
+                UpdateDetails();
+                OnPropertyChanged(nameof(CanRollBack));
+                return Task.CompletedTask;
+            });
+        });
+    }
+
+    [RelayCommand]
+    private async Task Export()
+    {
+        int pick = await Main.Dialogs.Choose("Export the mod list of profile \"" + _mods.ActiveProfile + "\" as:", "Export",
+            new[] { "Text list (.txt)", "Spreadsheet (.csv)", "Links only (.txt), to paste into GHUD elsewhere", "Copy links to the clipboard" });
+        if (pick < 0) return;
+
+        if (pick == 3)
+        {
+            await Main.Dialogs.SetClipboardText(Library.ExportLinks(_mods));
+            Main.StatusText = "Links copied to the clipboard.";
+            return;
+        }
+
+        string baseName = ArchiveTools.SafeFolderName(Instance.Name + " - " + _mods.ActiveProfile, "mods");
+        (string suffix, string filter, string pattern, string content) = pick switch
+        {
+            1 => (".csv", "CSV", "*.csv", Library.ExportCsv(_mods)),
+            2 => (" - links.txt", "Text", "*.txt", Library.ExportLinks(_mods)),
+            _ => (".txt", "Text", "*.txt", Library.ExportText(Instance, _mods)),
+        };
+
+        string? file = await Main.Dialogs.SaveFile("Export mod list", baseName + suffix, filter, pattern);
+        if (file == null) return;
+        await File.WriteAllTextAsync(file, content);
+        Main.StatusText = "Exported to " + file;
+        Main.Log.Add("INFO", "Exported " + Instance.Name + " (" + _mods.ActiveProfile + ") to " + file);
     }
 
     // ---------------- Deploying ----------------
@@ -449,7 +745,12 @@ public partial class GameViewModel : ObservableObject
 
     // ---------------- Folders / navigation ----------------
 
-    [RelayCommand] private void Back() => Main.GoHome();
+    [RelayCommand]
+    private void Back()
+    {
+        Leave();
+        Main.GoHome();
+    }
     [RelayCommand] private void OpenGameFolder() => Main.Dialogs.OpenInFileManager(Instance.DeployFolder);
     [RelayCommand] private void OpenStaging() => Main.Dialogs.OpenInFileManager(Instance.StagingRoot);
     [RelayCommand] private void OpenLibrary() => Main.Dialogs.OpenInFileManager(Instance.DownloadsRoot);

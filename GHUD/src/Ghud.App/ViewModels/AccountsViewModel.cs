@@ -15,6 +15,8 @@ public partial class AccountsViewModel : ObservableObject
     [ObservableProperty] public partial string GitLabToken { get; set; }
     [ObservableProperty] public partial string NexusApiKey { get; set; }
     [ObservableProperty] public partial string NexusAccountText { get; set; } = "";
+    [ObservableProperty] public partial string DownloadsFolder { get; set; } = "";
+    [ObservableProperty] public partial string NexusHandlerText { get; set; } = "";
 
     public string SecretsInfo { get; }
 
@@ -25,6 +27,45 @@ public partial class AccountsViewModel : ObservableObject
         GitLabToken = main.Secrets.Get(SecretNames.GitLabToken) ?? "";
         NexusApiKey = main.Secrets.Get(SecretNames.NexusApiKey) ?? "";
         SecretsInfo = main.Secrets is SecretStore s ? s.Description : "";
+        DownloadsFolder = main.Settings.DownloadsFolder ?? "";
+        RefreshNexusHandlerText();
+    }
+
+    private void RefreshNexusHandlerText() =>
+        NexusHandlerText = NexusLinks.IsRegisteredToUs()
+            ? "Nexus \"Mod Manager Download\" buttons open GHUD."
+            : "Nexus \"Mod Manager Download\" buttons don't open GHUD yet.";
+
+    // Opt-in: another mod manager (Mod Organizer, Vortex, the RimWorld Mod
+    // Manager) may own nxm:// links, and only one program can.
+    [RelayCommand]
+    private async Task RegisterNexusHandler()
+    {
+        string? current = NexusLinks.CurrentHandler();
+        if (!await Main.Dialogs.Confirm(
+                "Make Nexus \"Mod Manager Download\" buttons open GHUD?\n\n" +
+                (current != null ? "They currently open:\n" + current + "\n\n" : "") +
+                "Only one program can receive them; Mod Organizer, Vortex or the RimWorld Mod Manager can take them back the same way.",
+                "Nexus links"))
+            return;
+
+        try
+        {
+            NexusLinks.Register();
+            Main.Log.Add("INFO", "GHUD now handles Nexus nxm:// links.");
+        }
+        catch (Exception ex)
+        {
+            await Main.Dialogs.Error("Couldn't register GHUD for Nexus links: " + ex.Message);
+        }
+        RefreshNexusHandlerText();
+    }
+
+    [RelayCommand]
+    private async Task BrowseDownloadsFolder()
+    {
+        string? folder = await Main.Dialogs.PickFolder("Your browser's Downloads folder", DownloadsFolder);
+        if (folder != null) DownloadsFolder = folder;
     }
 
     [RelayCommand]
@@ -36,6 +77,8 @@ public partial class AccountsViewModel : ObservableObject
         Main.Secrets.Set(SecretNames.GitHubToken, Clean(GitHubToken));
         Main.Secrets.Set(SecretNames.GitLabToken, Clean(GitLabToken));
         Main.Secrets.Set(SecretNames.NexusApiKey, Clean(NexusApiKey));
+        Main.Settings.DownloadsFolder = Clean(DownloadsFolder) ?? GhudPaths.DefaultDownloadsFolder();
+        Main.Settings.Save();
         Main.StatusText = "Accounts saved.";
         Main.Log.Add("INFO", "Accounts saved.");
     }

@@ -38,6 +38,23 @@
       </StackPanel>
     </Grid>
 
+    <!-- Downloads to finish in the browser -->
+    <Border DockPanel.Dock="Bottom" IsVisible="{Binding HasPending}" Padding="10,8" CornerRadius="6" Margin="0,8,0,0"
+            BorderThickness="1" BorderBrush="{DynamicResource Theme.StatusWorking}">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+        <TextBlock Text="Waiting for you to finish these in your browser:" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Theme.StatusWorking}" />
+        <Button Grid.Column="1" Content="Stop waiting" Command="{Binding ClearPendingCommand}" />
+        <ItemsControl Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Pending}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:PendingDownload">
+              <TextBlock Text="{Binding Text, StringFormat='• {0}'}" TextWrapping="Wrap" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </Border>
+
     <!-- Install box -->
     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
       <TextBox Text="{Binding LinksInput}" AcceptsReturn="True" Height="64" AutomationProperties.Name="Links"
@@ -56,6 +73,15 @@
     <!-- Mod list + details -->
     <Grid ColumnDefinitions="*,330" ColumnSpacing="10" Margin="0,8,0,0">
       <DockPanel>
+        <WrapPanel DockPanel.Dock="Top" ItemSpacing="6" LineSpacing="6" Margin="0,0,0,6">
+          <Button Content="Check updates" Command="{Binding CheckUpdatesCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+          <Button Content="Update selected" Command="{Binding UpdateSelectedCommand}" IsEnabled="{Binding HasSelection}" />
+          <Button Content="Update outdated" Command="{Binding UpdateOutdatedCommand}" IsEnabled="{Binding Main.IsNotBusy}"
+                  ToolTip.Tip="Updates every mod marked Update or Unknown." />
+          <Button Content="Clean up library..." Command="{Binding CleanupLibraryCommand}" IsEnabled="{Binding Main.IsNotBusy}"
+                  ToolTip.Tip="Delete old archives from the download library." />
+          <Button Content="Export..." Command="{Binding ExportCommand}" />
+        </WrapPanel>
         <TextBlock DockPanel.Dock="Top" Text="{Binding LoadOrderHint}" Opacity="0.7" FontSize="12" Margin="0,0,0,4" />
         <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" AutoGenerateColumns="False"
                   CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeColumns="True"
@@ -82,6 +108,7 @@
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
             <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
+            <DataGridTextColumn Header="Update" Binding="{Binding UpdateText}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
             <DataGridTextColumn Header="Conflicts" Binding="{Binding ConflictText}" Width="*" IsReadOnly="True" x:DataType="vm:ModRow" />
           </DataGrid.Columns>
         </DataGrid>
@@ -94,6 +121,10 @@
           <Button Content="Down" Command="{Binding MoveDownCommand}" IsEnabled="{Binding HasSelection}" />
           <Button Content="Bottom" Command="{Binding MoveBottomCommand}" IsEnabled="{Binding HasSelection}" ToolTip.Tip="Highest priority" />
           <Button Content="Remove" Command="{Binding RemoveModCommand}" IsEnabled="{Binding HasSelection}" />
+          <Button Content="Roll back..." Command="{Binding RollBackCommand}" IsEnabled="{Binding CanRollBack}"
+                  ToolTip.Tip="Go back to an earlier version from the download library." />
+          <CheckBox Content="Keep all versions" IsChecked="{Binding SelectedKeepAll}" IsEnabled="{Binding HasSelection}"
+                    ToolTip.Tip="Library cleanup never deletes this mod's archives." />
         </WrapPanel>
         <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="6" LineSpacing="6" Margin="0,8,0,0">
           <Button Content="Game folder" Command="{Binding OpenGameFolderCommand}" />

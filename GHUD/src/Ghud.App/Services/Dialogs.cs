@@ -22,6 +22,9 @@ public interface IDialogs
     // One line of text; null if cancelled.
     Task<string?> Prompt(string message, string title, string initial);
 
+    // Pick one item from a list; -1 if cancelled.
+    Task<int> Choose(string message, string title, IReadOnlyList<string> options);
+
     Task<string?> PickFolder(string title, string? startPath);
     Task<string?> OpenFile(string title, string filterName, string pattern);
     Task<string?> SaveFile(string title, string suggestedName, string filterName, string pattern);
@@ -55,6 +58,48 @@ public sealed class Dialogs : IDialogs
 
     public Task<bool> Confirm(string message, string title, bool defaultYes = false) =>
         Show(title, message, null, new[] { ("Yes", true), ("No", false) }, defaultYes ? 0 : 1);
+
+    public async Task<int> Choose(string message, string title, IReadOnlyList<string> options)
+    {
+        Window dialog = new()
+        {
+            Title = title,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            CanResize = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            MinWidth = 420,
+            MaxWidth = 720,
+        };
+
+        ListBox list = new() { ItemsSource = options, SelectedIndex = options.Count > 0 ? 0 : -1, MaxHeight = 320, MinWidth = 380 };
+        Button ok = new() { Content = "OK", MinWidth = 80, IsDefault = true };
+        Button cancel = new() { Content = "Cancel", MinWidth = 80, IsCancel = true };
+        ok.Click += (_, _) => dialog.Close(list.SelectedIndex);
+        cancel.Click += (_, _) => dialog.Close(-1);
+        list.DoubleTapped += (_, _) => dialog.Close(list.SelectedIndex);
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxWidth = 660 },
+                list,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { ok, cancel },
+                },
+            },
+        };
+
+        dialog.Opened += (_, _) => { ThemeManager.StyleTitleBar(dialog); list.Focus(); };
+        return await dialog.ShowDialog<int>(_owner);
+    }
 
     public async Task<string?> Prompt(string message, string title, string initial)
     {
