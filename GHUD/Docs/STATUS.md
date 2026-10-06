@@ -141,10 +141,17 @@ non-MIT texts in `licenses\`. Builds copy `LICENSE`, the notices and `licenses\`
 3. ✅ Window (v0.2.0): home tiles, add game, profiles, mod list, install, deploy, accounts,
    About + licence files.
 4. ✅ Core parity with the RimWorld Mod Manager (0.3.0): see the table above.
-5. **Next: the RimWorld module** (the RimWorld Mod Manager's RimWorld-only features):
-   Steam Workshop through anonymous SteamCMD (IDs, links, collections; grouped downloads;
-   update checks), the session reader (ModsConfig.xml load order, Player.log, LLM bundle),
-   Workshop-ID detection of existing mods.
+5. **Next: the RimWorld module.** Decided 2026-10-06 after comparing with RimPy and RimSort:
+   GHUD is a *complementary* tool (getting mods from anywhere, updates, profiles, rollback),
+   not a replacement, and nothing community-maintained (no rules database to look after).
+   RimSort / RimPy keep working alongside it (GHUD deploys normal mod folders).
+   - Steam Workshop through anonymous SteamCMD (IDs, links, collections; grouped
+     downloads; update checks); Workshop-ID detection of existing mods
+   - **Basic load order:** a profile is a RimWorld mod list: switching writes
+     `ModsConfig.xml` (active mods + order); sorting only from each mod's own About.xml
+     (dependencies, loadAfter / loadBefore); Core and DLCs first
+   - the session reader (Player.log, LLM bundle)
+   - later, maybe: warnings (missing dependencies, incompatibilities, order violations)
 6. Before a first release: download queue (3 at once, resume, progress per item),
    drag-and-drop ordering, Linux test, release build script (single-file GHUD.exe +
    LICENSE + notices + licenses), README user guide, then its own GitHub repository.
