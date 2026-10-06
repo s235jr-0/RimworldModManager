@@ -181,7 +181,7 @@ public sealed class Deployer
         }
 
         DeployResult result = new(placed, removed, unchanged, linked, copied, originals, edited, conflicts);
-        _log.Add("SUCCESS", "Deployed " + _instance.Name + ": " + placed + " placed (" + linked + " linked, " + copied + " copied), " +
+        _log.Add("SUCCESS", (order.Count == 0 ? "Undeployed " : "Deployed ") + _instance.Name + ": " + placed + " placed (" + linked + " linked, " + copied + " copied), " +
                             removed + " removed, " + unchanged + " unchanged, " + conflicts.Count + " conflict(s)." +
                             (originals > 0 ? " " + originals + " game file(s) kept in originals." : "") +
                             (edited > 0 ? " " + edited + " edited file(s) kept in changed." : ""));

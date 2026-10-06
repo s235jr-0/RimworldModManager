@@ -13,6 +13,11 @@ public static class GhudPaths
 
     public static string InstancesRoot => Path.Combine(DataRoot, "instances");
 
+    public static string LogsDir => Path.Combine(DataRoot, "logs");
+
+    // Colour schemes (shared format with the RimWorld Mod Manager).
+    public static string ThemesFile => Path.Combine(DataRoot, "themes.json");
+
     // Where an instance keeps its staged mods and downloaded archives. Hard
     // links only work within one drive, so on Windows a game on another drive
     // gets "<drive>\GHUD Staging\<instance>"; otherwise the instance's own
@@ -134,10 +139,25 @@ public sealed class InstanceStore
     // game folder is never touched here (undeploy first).
     public void Delete(GameInstance i, bool deleteStorage)
     {
-        if (deleteStorage && i.StorageRoot != i.DataFolder && Directory.Exists(i.StorageRoot))
+        bool storageInside = i.StorageRoot == i.DataFolder;
+        if (deleteStorage && !storageInside && Directory.Exists(i.StorageRoot))
             SafeFileSystem.DeleteDirectory(i.StorageRoot);
-        if (Directory.Exists(i.DataFolder))
+        if (!Directory.Exists(i.DataFolder)) return;
+
+        if (deleteStorage || !storageInside)
+        {
             SafeFileSystem.DeleteDirectory(i.DataFolder);
+            return;
+        }
+
+        // Keep staging\ and downloads\ (they live in the data folder); remove
+        // everything else, including instance.json, so the game is forgotten.
+        foreach (FileSystemInfo e in new DirectoryInfo(i.DataFolder).EnumerateFileSystemInfos())
+        {
+            if (e.Name is "staging" or "downloads") continue;
+            if (e is DirectoryInfo) SafeFileSystem.DeleteDirectory(e.FullName);
+            else e.Delete();
+        }
     }
 
     public void Save(GameInstance i)

@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ghud.App.ViewModels"
+             x:Class="Ghud.App.Views.AddGameView"
+             x:DataType="vm:AddGameViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,18" Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
+      <TextBlock Text="Add a game" FontSize="22" FontWeight="SemiBold" />
+
+      <TextBlock Text="Game" Margin="0,6,0,0" />
+      <ComboBox ItemsSource="{Binding Modules}" SelectedIndex="{Binding ModuleIndex}" MinWidth="320"
+                AutomationProperties.Name="Game type" />
+
+      <TextBlock Text="Name shown on the home screen" />
+      <TextBox Text="{Binding GameName}" AutomationProperties.Name="Game name" />
+
+      <TextBlock Text="Game folder (where the game is installed)" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Text="{Binding GameFolder}" AutomationProperties.Name="Game folder" />
+        <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseCommand}" MinWidth="90" />
+      </Grid>
+      <TextBlock Text="{Binding DetectText}" Opacity="0.75" TextWrapping="Wrap" />
+
+      <!-- Only for General games -->
+      <Border IsVisible="{Binding IsGeneral}" Padding="12" CornerRadius="8" BorderThickness="1"
+              BorderBrush="{DynamicResource Theme.Border}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="How this game's mods work" FontWeight="SemiBold" />
+
+          <TextBlock Text="Mods folder, inside the game folder (empty = the game folder itself)" />
+          <TextBox Text="{Binding DeploySubfolder}" AutomationProperties.Name="Mods folder" />
+
+          <TextBlock Text="Layout" />
+          <ComboBox ItemsSource="{Binding Layouts}" SelectedIndex="{Binding LayoutIndex}" MinWidth="420"
+                    AutomationProperties.Name="Layout" />
+
+          <TextBlock Text="What marks a mod (optional): a file or folder name such as SubModule.xml or gamedata, or a pattern such as *.pak" TextWrapping="Wrap" />
+          <TextBox Text="{Binding Marker}" AutomationProperties.Name="Marker" />
+
+          <TextBlock Text="Nexus Mods name (optional), as in nexusmods.com/NAME/mods/..." TextWrapping="Wrap" />
+          <TextBox Text="{Binding NexusDomain}" AutomationProperties.Name="Nexus name" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+        <Button Content="Add game" Command="{Binding CreateCommand}" Classes="accent" MinWidth="120" />
+        <Button Content="Cancel" Command="{Binding CancelCommand}" MinWidth="90" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

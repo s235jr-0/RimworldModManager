@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ghud.App.ViewModels"
+             x:Class="Ghud.App.Views.AccountsView"
+             x:DataType="vm:AccountsViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,18" Spacing="10" MaxWidth="820" HorizontalAlignment="Left">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button Content="← Games" Command="{Binding BackCommand}" />
+        <TextBlock Text="Accounts" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Opacity="0.8" TextWrapping="Wrap"
+                 Text="All optional. GitHub and GitLab work without a token; Nexus needs your personal API key. No passwords are stored." />
+
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+        <TextBlock Text="GitHub token" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" Text="{Binding GitHubToken}" PasswordChar="●" AutomationProperties.Name="GitHub token"
+                 PlaceholderText="Raises GitHub's limit from 60 to 5,000 requests per hour" />
+        <Button Grid.Column="2" Content="Get one" Command="{Binding OpenLinkCommand}"
+                CommandParameter="https://github.com/settings/personal-access-tokens/new" />
+
+        <TextBlock Grid.Row="1" Text="GitLab / GitGud token" VerticalAlignment="Center" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GitLabToken}" PasswordChar="●" AutomationProperties.Name="GitLab token"
+                 PlaceholderText="Only needed for private projects" />
+
+        <TextBlock Grid.Row="2" Text="Nexus API key" VerticalAlignment="Center" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NexusApiKey}" PasswordChar="●" AutomationProperties.Name="Nexus API key"
+                 PlaceholderText="nexusmods.com > Settings > API keys" />
+        <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="6">
+          <Button Content="Get key" Command="{Binding OpenLinkCommand}" CommandParameter="https://www.nexusmods.com/users/myaccount?tab=api" />
+          <Button Content="Check key" Command="{Binding CheckNexusKeyCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+        </StackPanel>
+        <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NexusAccountText}" Opacity="0.8" TextWrapping="Wrap" />
+      </Grid>
+
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Content="Save accounts" Command="{Binding SaveCommand}" Classes="accent" />
+        <TextBlock Text="{Binding SecretsInfo}" VerticalAlignment="Center" Opacity="0.8" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

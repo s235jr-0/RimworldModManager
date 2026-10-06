@@ -6,7 +6,7 @@ without a module (a niche or new game with a mods folder). GHUD is the parent ap
 RimWorld Mod Manager's features become its RimWorld module. .NET 10 + Avalonia 12,
 Windows + Linux. Self-contained in this folder, ready to move to its own repository.
 
-**Current version:** 0.1.0, core library only (no window yet).
+**Current version:** 0.2.0, first usable window (home screen, games, profiles, install, deploy).
 
 ## Decisions (2026-10-05)
 - Mods are **staged** (each unpacked in its own folder) and **deployed** into the game with
@@ -50,8 +50,11 @@ GHUD\
   src\DownloadKit.Core\  downloads, link sorting, GitHub / GitLab / Nexus (any game),
                          MEGA / MediaFire / Drive / Dropbox, archives, Downloads watcher,
                          link-safe file operations, logging, colour schemes. No UI.
-  src\Ghud.Core\         instances, game modules, staging, deploying, load order
-  tests\Ghud.Tests\      tests for both (dotnet test in this folder)
+  src\Ghud.Core\         instances, game modules, profiles, staging, download library,
+                         link downloads, deploying, load order, conflicts
+  src\Ghud.App\          the window (Avalonia 12); builds GHUD.exe
+  tests\Ghud.Tests\      tests (dotnet test in this folder)
+  licenses\             full texts of bundled non-MIT licences (ship with every build)
 ```
 
 ## Core (`src\Ghud.Core`)
@@ -60,8 +63,16 @@ GHUD\
   `Mods\<folder>`), `GeneralModule` (settings: deploy folder, folder-per-mod or merge,
   marker file / folder / pattern such as `SubModule.xml`, `gamedata`, `*.pak`).
 - `GameInstance.cs`: one installed game; data in `%LocalAppData%\GHUD\instances\<id>\`
-  (Linux `~/.local/share/GHUD/...`): `instance.json`, `mods.json`, `deployment.json`,
-  `staging\`, `originals\`, `changed\`.
+  (Linux `~/.local/share/GHUD/...`): `instance.json`, `mods.json`, `profiles.json`,
+  `deployment.json`, `originals\`, `changed\`. Staged mods (`staging\`) and the download
+  library (`downloads\`) live in the storage folder: the data folder, or
+  `<drive>\GHUD Staging\<id>` when the game is on another drive (hard links need one
+  drive). Removing a game can keep or delete its staged mods.
+- `ModSet.cs`: the staged mods (shared) plus profiles, each with its own order and on/off;
+  new mods join every profile, enabled only in the active one.
+- `LinkDownloader.cs`: GitHub, GitLab / GitGud, Git file links, Nexus (Premium downloads
+  directly; free accounts get a browser step), `nxm://` links, MEGA, MediaFire, Drive,
+  Dropbox, direct files; LoversLab is a browser step. Archives go to the library.
 - `Staging.cs`: archive → unpack → module finds mods → `staging\<key>\` laid out exactly as
   in the game. Updates (same game ID, else same name) replace in place, keeping position
   and on/off; the new copy is built beside the old one and swapped in.
@@ -71,35 +82,55 @@ GHUD\
   since deploying (edits, game updates) go to `changed\` instead of being deleted; folders
   GHUD created are removed when empty; links in staging are never followed; the manifest
   is saved even after a failure part-way.
-- 14 tests (`dotnet test` in this folder): module detection, staging updates, refusing
-  archives without mods, instance store, priority / reorder / conflicts, originals kept
-  and restored, fall back to the next mod then the original, hard links, files replaced
-  in the game folder kept, RimWorld folder deploy leaves hand-installed mods alone, links
-  in staging not followed.
+- 84 tests (`dotnet test` in this folder): DownloadKit (links, Git / Nexus parsing,
+  archives, link-safe files, colour schemes, VDF, watcher), module detection, staging
+  updates, refusing archives without mods, instance store, profiles (joining, switching,
+  names, removal), download library, storage drive, removing a game while keeping its
+  mods, priority / reorder / conflicts, originals kept and restored, fall back to the next
+  mod then the original, hard links, files replaced in the game folder kept, RimWorld
+  deploy leaves hand-installed mods alone, links in staging not followed.
+
+## Window (`src\Ghud.App`, v0.2.0)
+- Home screen: one tile per game (coloured initials, no game artwork), "+ Add game",
+  Accounts, Log folder, About (GPL notice, section 5d). Colour schemes from DownloadKit
+  apply (no Appearance editor yet).
+- Add game: RimWorld (finds the usual install folders) or General (mods folder, layout,
+  marker, Nexus name).
+- Game screen: profile picker (New / Rename / Delete), mod list in priority order (on/off,
+  source tag, version, conflicts "wins N / loses N"), Top / Up / Down / Bottom / Remove,
+  details with each conflicting file, Install links (paste) / Install from file, Deploy /
+  Undeploy with a "press Deploy" reminder, open game / staging / download folders,
+  Remove game.
+- Accounts: GitHub / GitLab tokens, Nexus API key + Check key, saved encrypted.
+- Tested through the real window (2026-10-06, Windows): added a General game (merge,
+  marker `gamedata`) on a test folder, installed two archives through the Open dialog,
+  conflicts shown, Deploy placed the winner as hard links and kept the game's file,
+  Undeploy restored the folder exactly, Remove game deleted everything.
 
 ## Licence
 GPL-3.0-or-later, Copyright (C) 2026 s235JR: `LICENSE` (official text, unchanged),
-notice in `README.md`, bundled libraries in `THIRD-PARTY-NOTICES.md` (all MIT, compatible
-with the GPL). Version stamped into every built file through `Directory.Build.props`.
+notice in `README.md` and the About box, bundled components in `THIRD-PARTY-NOTICES.md`
+(MIT, BSD-3-Clause, "Old MIT", SIL OFL 1.1 for the Inter font: all GPL-compatible), full
+non-MIT texts in `licenses\`. Builds copy `LICENSE`, the notices and `licenses\` next to
+`GHUD.exe`. Version and copyright stamped into every built file (`Directory.Build.props`).
 
 ## Roadmap
 1. ✅ DownloadKit library (downloads, sources, archives, logs, colour schemes).
 2. ✅ Core: instances, modules, staging, deployer, load order by priority, conflicts.
-3. Window: instance picker, mod list (drag to reorder, on/off, source tags, conflicts),
-   install from links / files (DownloadKit), Deploy / Undeploy, Accounts, Log, Appearance.
-   Reuses UI pieces from the RimWorld manager (colour schemes, dialogs, saved accounts)
-   as a `DownloadKit.Ui` library here. Licence duties for the window: an About box with
-   the copyright, "no warranty" and where the licence is (GPL-3.0 section 5d); add the
-   UI libraries (Avalonia, Skia, HarfBuzz, CommunityToolkit.Mvvm, ...) to
-   `THIRD-PARTY-NOTICES.md`; release builds ship `LICENSE` and the notices next to the
-   `.exe` and say where the source is.
-4. RimWorld instance extras: Steam Workshop through anonymous SteamCMD (move SteamCmd to
-   DownloadKit), update checks per source, adopting mods already in the Mods folder.
-5. Download library: keep every downloaded archive for reinstall / rollback.
-6. Skyrim SE/AE + Fallout 4 module: `Data\` deploy, script extenders into the game folder,
+3. ✅ Window (v0.2.0): home tiles, add game, profiles, mod list, install, deploy, accounts,
+   About + licence files.
+4. Next (towards a first release, 0.3–0.5):
+   - adopt mods already in a game folder (decision: offer, tagged Manual)
+   - download queue: 3 at once, resume, progress per item; `nxm://` handler (GHUD owns it)
+     and the LoversLab / Downloads-folder pickup
+   - update checks per source + update button; rollback from the download library;
+     library cleanup after N days
+   - drag-and-drop ordering; Appearance (colour scheme editor); Linux test
+   - RimWorld: Steam Workshop through anonymous SteamCMD
+   - release build script (single-file GHUD.exe + LICENSE + notices + licenses\), README
+     user guide, then its own GitHub repository
+5. Skyrim SE/AE + Fallout 4 module: `Data\` deploy, script extenders into the game folder,
    plugin list (`plugins.txt`) and its order, FOMOD installers.
-7. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
+6. S.T.A.L.K.E.R. Anomaly module (gamedata priority, ModDB through the browser step).
 
 ## Open questions
-- Hard links need staging on the game's drive: pick the staging folder automatically per
-  drive, or ask when creating an instance?

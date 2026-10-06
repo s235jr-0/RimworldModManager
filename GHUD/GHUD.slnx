@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Ghud.App/Ghud.App.csproj" />
     <Project Path="src/Ghud.Core/Ghud.Core.csproj" />
     <Project Path="src/DownloadKit.Core/DownloadKit.Core.csproj" />
   </Folder>

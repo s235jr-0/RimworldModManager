@@ -4,11 +4,14 @@ A modular mod manager for any game: a solid core that downloads, stages and depl
 (hard links, load order by priority, conflicts, safe removal), plus game modules for
 each game's specifics. Windows and Linux, .NET 10.
 
-**Status:** early development; the core library and its tests exist, the window does not
-yet. Plan, decisions and roadmap: [`Docs/STATUS.md`](Docs/STATUS.md).
+**Status:** early development (v0.2.0). Works today: add games (RimWorld, or any game
+through "General"), profiles, installing from links or archives, priority order with
+conflicts, Deploy / Undeploy. Plan, decisions and roadmap: [`Docs/STATUS.md`](Docs/STATUS.md).
 
-## Building
-Needs the .NET 10 SDK. From this folder: `dotnet test` runs the tests.
+## Building and running
+Needs the .NET 10 SDK. From this folder:
+- `dotnet test` runs the tests
+- `dotnet run --project src/Ghud.App` starts G.H.U.D.
 
 ## License
 

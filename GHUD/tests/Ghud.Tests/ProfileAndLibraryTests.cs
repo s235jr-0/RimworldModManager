@@ -100,6 +100,23 @@ public class LibraryAndStorageTests
     }
 
     [Fact]
+    public void RemovingAGame_CanKeepItsStagedMods()
+    {
+        using World w = new("general", new GeneralGameSettings { Layout = GeneralLayout.MergeIntoDeployFolder, DeploySubfolder = "" });
+        w.Staging.InstallArchive(w.Zip("ModA", ("a.txt", "A")), ArchiveOrigin.Manual());
+        InstanceStore store = new(Path.GetDirectoryName(w.Instance.DataFolder)!);
+
+        store.Delete(w.Instance, deleteStorage: false);
+
+        Assert.Empty(store.All());                                                   // the game is forgotten
+        Assert.True(File.Exists(Path.Combine(w.Instance.StagingRoot, "ModA", "a.txt"))); // its mods are kept
+        Assert.Single(Directory.GetFiles(w.Instance.DownloadsRoot));
+
+        store.Delete(w.Instance, deleteStorage: true);
+        Assert.False(Directory.Exists(w.Instance.DataFolder));
+    }
+
+    [Fact]
     public void Storage_GoesOnTheGamesDrive_OnWindows()
     {
         string data = OperatingSystem.IsWindows() ? @"C:\Users\x\AppData\Local\GHUD\instances\game" : "/home/x/.local/share/GHUD/instances/game";

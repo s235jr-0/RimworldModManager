@@ -1,0 +1,84 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Ghud.App.App"
+             RequestedThemeVariant="Light">
+
+  <!-- Colours come from the selected colour scheme (Services/ThemeManager):
+       Fluent's palette for standard controls, "Theme.<Role>" brushes below. -->
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <Style Selector="Button">
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Readable text on accent buttons whatever the accent colour is. -->
+    <Style Selector="Button.accent:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.OnAccent}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+      <Setter Property="Fill" Value="{DynamicResource Theme.OnAccent}" />
+    </Style>
+
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+    </Style>
+
+    <!-- Home screen: one tile per game, like desktop icons. -->
+    <Style Selector="Button.tile">
+      <Setter Property="Width" Value="150" />
+      <Setter Property="Height" Value="150" />
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
+    </Style>
+    <Style Selector="Border.tileicon">
+      <Setter Property="Width" Value="76" />
+      <Setter Property="Height" Value="76" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Source tags (Steam / Nexus / Git / LoversLab / Manual). -->
+    <Style Selector="Border.sourcetag">
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="8,1" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+    </Style>
+
+    <!-- Log lines: Tag holds LogLine.Role. -->
+    <Style Selector="SelectableTextBlock.log">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogText}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogSuccess]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogSuccess}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogError]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogError}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogDownload]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogDownload}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogBackup]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogBackup}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogDelete]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogDelete}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.log[Tag=LogCheck]">
+      <Setter Property="Foreground" Value="{DynamicResource Theme.LogCheck}" />
+    </Style>
+  </Application.Styles>
+
+</Application>
