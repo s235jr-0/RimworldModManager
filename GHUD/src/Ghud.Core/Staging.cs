@@ -65,6 +65,27 @@ public sealed class Staging
         }
     }
 
+    // A mod that is already unpacked: a Steam Workshop item in SteamCMD's
+    // cache. targetPrefix is its folder name in the deploy folder (the
+    // Workshop ID for Steam mods, as Steam itself names them). An existing
+    // mod with the same source ID (or updateKey) is updated in place. No
+    // archive goes to the library: SteamCMD keeps its own copy.
+    public StagedMod InstallFolder(string folder, ArchiveOrigin origin, string? updateKey = null, string? targetPrefix = null, Action<string>? status = null)
+    {
+        ModCandidate c = _module.FindMods(folder).FirstOrDefault()
+            ?? throw new Exception("No " + _module.DisplayName + " mod was found in " + folder + ".");
+        if (targetPrefix != null) c = c with { TargetPrefix = ArchiveTools.SafeFolderName(targetPrefix, c.TargetPrefix) };
+
+        StagedMod? target = updateKey != null ? _mods.Find(updateKey) : null;
+        target ??= origin.RemoteId == null ? null
+            : _mods.Catalog.FirstOrDefault(m => m.Source == origin.Source && m.RemoteId == origin.RemoteId);
+
+        status?.Invoke("Staging " + c.Name + "...");
+        StagedMod staged = StageOne(c, c.Name, origin, null, target);
+        _mods.Save();
+        return staged;
+    }
+
     // Re-stages an earlier archive of a mod from the library. Its origin
     // (link, update ID) stays; the version goes back to that archive's.
     public List<StagedMod> RollBack(StagedMod mod, ArchiveVersion version, Action<string>? status = null)
@@ -128,10 +149,15 @@ public sealed class Staging
             SafeFileSystem.DeleteDirectory(folder);
         }
 
-        StagedMod m = new() { Key = key, Name = name, ModId = c?.Id, Source = ModSource.Manual, InstalledUtc = DateTime.UtcNow };
+        ArchiveOrigin? origin = _module.OriginOf(target);
+        StagedMod m = new()
+        {
+            Key = key, Name = name, ModId = c?.Id, InstalledUtc = DateTime.UtcNow,
+            Source = origin?.Source ?? ModSource.Manual, Url = origin?.Url, RemoteId = origin?.RemoteId,
+        };
         _mods.Add(m);
         _mods.Save();
-        _log.Add("INSTALL", "[Manual] " + name + " adopted from the game folder (" + _instance.Name + ")");
+        _log.Add("INSTALL", "[" + ModSourceTags.Tag(m.Source) + "] " + name + " adopted from the game folder (" + _instance.Name + ")");
         return m;
     }
 
@@ -184,7 +210,7 @@ public sealed class Staging
         }
     }
 
-    private StagedMod StageOne(ModCandidate c, string name, ArchiveOrigin origin, string libraryFile, StagedMod? target = null)
+    private StagedMod StageOne(ModCandidate c, string name, ArchiveOrigin origin, string? libraryFile, StagedMod? target = null)
     {
         StagedMod? existing = target ??
             (c.Id != null ? _mods.Catalog.FirstOrDefault(m => String.Equals(m.ModId, c.Id, StringComparison.OrdinalIgnoreCase)) : null)

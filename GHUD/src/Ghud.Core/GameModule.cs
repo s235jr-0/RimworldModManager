@@ -54,4 +54,8 @@ public interface IGameModule
     // the deploy folder) one mod? Always false when mods merge into the game
     // folder, since their files can't be told apart from the game's.
     bool IsModFolder(string dir);
+
+    // Where an existing mod folder came from, if the game records it (a
+    // RimWorld Workshop mod knows its Workshop ID). Null = unknown (Manual).
+    ArchiveOrigin? OriginOf(string modDir) => null;
 }

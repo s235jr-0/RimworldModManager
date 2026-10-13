@@ -80,6 +80,14 @@ public sealed class RimWorldModule : IGameModule
 
     public bool IsModFolder(string dir) => FindAboutXml(dir) != null;
 
+    // Workshop mods (numeric folder, PublishedFileId.txt, own steamWorkshopUrl)
+    // are tagged Steam; their version is unknown until the first update.
+    public ArchiveOrigin? OriginOf(string modDir)
+    {
+        string id = RimWorld.RimWorldMods.WorkshopIdOf(modDir);
+        return id.Length == 0 ? null : new ArchiveOrigin(ModSource.Steam, DownloadKit.Steam.WorkshopIds.Url(id), id);
+    }
+
     // About/About.xml, matched case-insensitively (Linux file systems aren't).
     private static string? FindAboutXml(string modDir)
     {

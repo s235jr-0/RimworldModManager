@@ -15,6 +15,12 @@ public static class GhudPaths
 
     public static string LogsDir => Path.Combine(DataRoot, "logs");
 
+    // SteamCMD and its Workshop download cache. Deliberately the same folder
+    // the RimWorld Mod Manager uses, so downloads already there are reused.
+    public static string SteamCmdRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create),
+        "WorkshopModManager");
+
     public static string SettingsFile => Path.Combine(DataRoot, "settings.json");
 
     // The user's Downloads folder. Linux desktops record it in
@@ -81,6 +87,11 @@ public sealed class GameInstance
     public string? StorageFolder { get; set; }
 
     public GeneralGameSettings? General { get; set; }
+
+    // Module-specific settings (RimWorld: user-data folder, mod-list writing).
+    public Dictionary<string, string> Settings { get; set; } = new();
+
+    public string? Setting(string key) => Settings.TryGetValue(key, out string? v) && !String.IsNullOrWhiteSpace(v) ? v : null;
 
     [JsonIgnore] public string DataFolder { get; set; } = "";
 
