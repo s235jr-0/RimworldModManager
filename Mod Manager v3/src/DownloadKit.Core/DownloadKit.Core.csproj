@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- FROZEN COPY of G.H.U.D.'s DownloadKit (GHUD\src\DownloadKit.Core), taken
+  <!-- FROZEN COPY of G.H.U.D.'s DownloadKit (github.com/s235jr-0/GHUD, src/DownloadKit.Core), taken
        when the RimWorld Mod Manager became a finished, stand-alone app. New work
        happens in GHUD; copy fixes over only when this app needs them.
        Contents: link sorting, GitHub / GitLab / Nexus, file hosts

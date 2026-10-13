@@ -12,13 +12,6 @@ Mod Manager v3/                     RimWorld Mod Manager: Windows + Linux, .NET 
 ├─ BUILD.bat / build.sh             Tests + single-file build into publish/
 └─ Docs/                            README (user guide) + STATUS
 
-GHUD/                               G.H.U.D.: modular mod manager for any game (in progress;
-│                                   will move to its own repository)
-├─ src/DownloadKit.Core/            Downloads: links, GitHub/GitLab/Nexus, file hosts, archives
-├─ src/Ghud.Core/                   Instances, game modules, staging, deploy (hard links), load order
-├─ tests/                           Automated tests (run: dotnet test)
-└─ Docs/STATUS.md                   Plan, decisions and roadmap
-
 Mods/                               Small mods, one folder each
 ├─ Rimatomics Diplomatic Credit/
 │  ├─ BuildFiles/                   Source code, About.xml template, Harmony finder
@@ -58,7 +51,11 @@ is tagged with where it came from. See [`Mod Manager v3/Docs/README.md`](Mod%20M
 
 ## License
 
-- Everything in this repository is under the MIT License (`LICENSE`), **except** the
-  `GHUD/` folder, which is under the GNU General Public License v3.0 or later
-  (`GHUD/LICENSE`, third-party notices in `GHUD/THIRD-PARTY-NOTICES.md`).
-- The RimWorld Mod Manager is planned to move to GPL-3.0-or-later as well.
+- Everything in this repository is under the MIT License (`LICENSE`).
+- The RimWorld Mod Manager is planned to move to GPL-3.0-or-later.
+
+## G.H.U.D.
+
+Its successor, G.H.U.D. (General Hotfix Universal Downloader), a modular mod manager for
+any game with a RimWorld module, has its own repository:
+[s235jr-0/GHUD](https://github.com/s235jr-0/GHUD) (GPL-3.0-or-later).

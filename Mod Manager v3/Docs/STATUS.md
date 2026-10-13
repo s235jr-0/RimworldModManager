@@ -76,7 +76,7 @@
 
 ## Layout
 The download / archive / file-safety / log / colour-scheme code is in
-`src\DownloadKit.Core`: a **frozen copy** of G.H.U.D.'s DownloadKit (`..\GHUD\`), where
+`src\DownloadKit.Core`: a **frozen copy** of G.H.U.D.'s DownloadKit (https://github.com/s235jr-0/GHUD), where
 new work happens. `Core` keeps everything RimWorld-specific (About.xml, installer,
 session, Steam state). This app is finished and stand-alone; GHUD's RimWorld module is
 its successor.
