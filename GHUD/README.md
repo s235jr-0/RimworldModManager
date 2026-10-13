@@ -4,7 +4,8 @@ A modular mod manager for any game: a solid core that downloads, stages and depl
 (hard links, load order by priority, conflicts, safe removal), plus game modules for
 each game's specifics. Windows and Linux, .NET 10.
 
-**Status:** early development (v0.3.0). Works today: add games (RimWorld, or any game
+**Status:** early development (v0.4.0). RimWorld module: Steam Workshop through anonymous
+SteamCMD, session report and help bundle, optional basic load order. Works today: add games (RimWorld, or any game
 through "General"), profiles, installing from links (GitHub, GitLab, Nexus, MEGA, MediaFire,
 Drive, Dropbox, direct) or archives, priority order with conflicts, Deploy / Undeploy,
 update checks and updates, rollback, library cleanup, export, Nexus "Mod Manager Download"

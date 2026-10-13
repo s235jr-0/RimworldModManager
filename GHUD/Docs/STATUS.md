@@ -6,9 +6,9 @@ without a module (a niche or new game with a mods folder). GHUD is the parent ap
 RimWorld Mod Manager's features become its RimWorld module. .NET 10 + Avalonia 12,
 Windows + Linux. Self-contained in this folder, ready to move to its own repository.
 
-**Current version:** 0.3.0: the core matches the RimWorld Mod Manager's general features
-(updates, rollback, library cleanup, export, Nexus links, LoversLab pickup, colour schemes,
-adopting existing mods). Next: the RimWorld module.
+**Current version:** 0.4.0: the core and the RimWorld module now match the RimWorld Mod
+Manager (Steam Workshop through anonymous SteamCMD, session report, help bundle), plus a
+basic, opt-in load order. Next: talk about what comes next (see Roadmap).
 
 ## Decisions (2026-10-05)
 - Mods are **staged** (each unpacked in its own folder) and **deployed** into the game with
@@ -128,6 +128,22 @@ deployed back), install-links failure reported cleanly, Check updates, Appearanc
 Remove game. Not tested live: downloads from GitHub (its servers were unreachable from
 this computer that day; the same code worked the day before), Nexus, LoversLab, MEGA.
 
+## RimWorld module (0.4.0)
+| RimWorld Mod Manager | GHUD RimWorld module |
+|---|---|
+| Workshop IDs / links / collections, anonymous SteamCMD, groups of 10, manifest check | Same (`Ghud.Core\Workshop.cs`, SteamCMD in `DownloadKit.Core\Steam`); Workshop lines in the links box go to SteamCMD; staged as `Mods\<WorkshopId>` |
+| SteamCMD cache in `%LocalAppData%\WorkshopModManager` | **Shared**: GHUD uses the same folder, so existing downloads are reused |
+| Steam update checks, Update outdated | Same (one request to Steam for all Workshop mods) |
+| Workshop ID detection of installed mods | On adopt; mods adopted by GHUD 0.3 (tagged Manual) are re-tagged Steam once when the game opens |
+| Session reader, LLM bundle (account names removed) | Session report, Copy / Save help bundle |
+| Cleanup of the SteamCMD cache | SteamCMD cache... (preview first) |
+| — | **Basic load order** (opt-in "Deploy also sets RimWorld's mod list" / "Set mod list now"): the profile's switched-on mods + unmanaged active mods + Core and active expansions, sorted only by the mods' own About.xml (dependencies, loadAfter / loadBefore incl. by-version lists; Core then expansions; other mods after them unless they ask to load before, like Harmony); current order kept where no rule decides; loops broken with a note; ModsConfig.xml backed up (`.before-ghud` once, `.ghud-prev` every time) |
+
+Tested through the window (2026-10-13) on a fake RimWorld: Workshop install of Harmony
+through SteamCMD (shared cache), deploy as `Mods\2009463077`, mod list written as Harmony,
+Core, Royalty with both backups, update check "Current", session report (redacted).
+Not tested yet on the real game or in-game.
+
 ## Licence
 GPL-3.0-or-later, Copyright (C) 2026 s235JR: `LICENSE` (official text, unchanged),
 notice in `README.md` and the About box, bundled components in `THIRD-PARTY-NOTICES.md`
@@ -141,7 +157,7 @@ non-MIT texts in `licenses\`. Builds copy `LICENSE`, the notices and `licenses\`
 3. ✅ Window (v0.2.0): home tiles, add game, profiles, mod list, install, deploy, accounts,
    About + licence files.
 4. ✅ Core parity with the RimWorld Mod Manager (0.3.0): see the table above.
-5. **Next: the RimWorld module.** Decided 2026-10-06 after comparing with RimPy and RimSort:
+5. ✅ **The RimWorld module** (0.4.0, see above). Decided 2026-10-06 after comparing with RimPy and RimSort:
    GHUD is a *complementary* tool (getting mods from anywhere, updates, profiles, rollback),
    not a replacement, and nothing community-maintained (no rules database to look after).
    RimSort / RimPy keep working alongside it (GHUD deploys normal mod folders).

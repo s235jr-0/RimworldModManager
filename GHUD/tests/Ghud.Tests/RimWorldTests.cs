@@ -223,4 +223,24 @@ public class RimWorldGameTests
         Assert.Contains("C:\\Users\\<user>\\Mods", s.Bundle);
         Assert.DoesNotContain("SomeUser", s.Bundle);
     }
+
+    [Fact]
+    public void EarlierAdoptedWorkshopMods_AreTaggedSteam_AndWritingTheModListIsOptIn()
+    {
+        using World w = new("rimworld");
+        // Adopted by an older GHUD: staged, tagged Manual, no Workshop ID recorded.
+        string key = w.Staging.InstallArchive(w.Zip("old", ("2009463077/About/About.xml", Rw.About("Harmony", "brrainz.harmony"))), ArchiveOrigin.Manual())[0].Key;
+        RimWorldGame rw = new(w.Instance, w.Mods);
+
+        Assert.False(rw.WriteModListOnDeploy);
+        Assert.Equal(1, rw.DetectWorkshopOrigins(new Ghud.Modules.RimWorldModule()));
+
+        StagedMod m = w.Mods.Find(key)!;
+        Assert.Equal(ModSource.Steam, m.Source);
+        Assert.Equal("2009463077", m.RemoteId);
+        Assert.Equal(0, rw.DetectWorkshopOrigins(new Ghud.Modules.RimWorldModule()));   // only once
+
+        w.Instance.Settings[RimWorldGame.WriteModListSetting] = "true";
+        Assert.True(rw.WriteModListOnDeploy);
+    }
 }

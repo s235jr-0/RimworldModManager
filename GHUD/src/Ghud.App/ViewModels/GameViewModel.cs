@@ -3,6 +3,9 @@ using System.Text;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DownloadKit.Steam;
+using Ghud.Modules;
+using Ghud.Modules.RimWorld;
 
 namespace Ghud.App.ViewModels;
 
@@ -51,6 +54,8 @@ public partial class GameViewModel : ObservableObject
     private readonly Staging _staging;
     private readonly Deployer _deployer;
     private readonly LinkDownloader _links;
+    private readonly RimWorldGame? _rw;             // RimWorld instances only
+    private readonly WorkshopInstaller? _workshop;  // games with a Steam app ID
     private bool _switchingProfile;
 
     // Per mod key: conflicting files it wins / loses, and with whom.
@@ -86,6 +91,24 @@ public partial class GameViewModel : ObservableObject
     [ObservableProperty] public partial string DeployedText { get; set; } = "";
 
     public bool HasSelection => SelectedRow != null;
+
+    public bool IsRimWorld => _rw != null;
+    public string LinksHint => (_workshop != null ? "Steam Workshop IDs / links / collections, " : "") +
+        "GitHub, GitLab / GitGud, Nexus, MEGA, MediaFire, Google Drive, Dropbox, direct files... one per line";
+
+    // RimWorld: Deploy also writes ModsConfig.xml (opt-in).
+    public bool WriteModList
+    {
+        get => _rw?.WriteModListOnDeploy ?? false;
+        set
+        {
+            Instance.Settings[RimWorldGame.WriteModListSetting] = value ? "true" : "false";
+            Main.Store.Save(Instance);
+            OnPropertyChanged();
+        }
+    }
+
+    public string RimWorldDataText => _rw == null ? "" : "RimWorld data: " + _rw.UserData;
     public bool CanRollBack => SelectedRow?.Mod.History.Count > 0;
 
     public bool SelectedKeepAll
@@ -110,6 +133,14 @@ public partial class GameViewModel : ObservableObject
         _staging = new Staging(instance, _module, _mods, main.Log);
         _deployer = new Deployer(instance, main.Log);
         _links = new LinkDownloader(main.Secrets, _module.NexusDomain);
+        if (_module is RimWorldModule)
+        {
+            _rw = new RimWorldGame(instance, _mods);
+            int tagged = _rw.DetectWorkshopOrigins(_module);
+            if (tagged > 0) main.Log.Add("INFO", instance.Name + ": " + tagged + " mod(s) recognised as Steam Workshop mods (tagged Steam).");
+        }
+        if (_module.SteamAppId != null)
+            _workshop = new WorkshopInstaller(instance, _module, _mods, _staging, new SteamCmd(GhudPaths.SteamCmdRoot), main.Log);
 
         Pending.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasPending));
         ReloadProfiles();
@@ -348,11 +379,25 @@ public partial class GameViewModel : ObservableObject
 
         List<string> installed = new(), failed = new();
         List<BrowserStepRequired> steps = new();
+        List<string> steamLines = _workshop == null ? new() : links.Where(l => LinkClassifier.Classify(l) == LinkKind.Steam).ToList();
+        List<string> otherLinks = links.Except(steamLines).ToList();
 
         await Main.RunAsync(
             () =>
             {
-                foreach (string link in links)
+                if (steamLines.Count > 0)
+                {
+                    try
+                    {
+                        WorkshopInstaller.Result w = _workshop!.Install(WorkshopIds.Parse(String.Join("\n", steamLines)), force: false, Main.SetStatus);
+                        installed.AddRange(w.Installed.Select(m => "[Steam] " + m.Name));
+                        installed.AddRange(w.Skipped.Select(n => "[Steam] " + n + " (already current)"));
+                        failed.AddRange(w.Failed.Values);
+                    }
+                    catch (Exception ex) { failed.Add("Steam Workshop: " + ex.Message); }
+                }
+
+                foreach (string link in otherLinks)
                 {
                     try
                     {
@@ -603,6 +648,18 @@ public partial class GameViewModel : ObservableObject
         await Main.RunAsync(
             () =>
             {
+                if (_workshop != null && rows.Any(r => r.Mod.Source == ModSource.Steam))
+                {
+                    Main.SetStatus("Checking Steam Workshop mods...");
+                    try
+                    {
+                        foreach ((string key, UpdateResult u) in _workshop.CheckUpdates(rows.Select(r => r.Mod), Main.SetStatus))
+                            results[key] = u;
+                    }
+                    catch (Exception ex) { errors.Add("Steam Workshop: " + ex.Message); }
+                    rows = rows.Where(r => r.Mod.Source != ModSource.Steam).ToList();
+                }
+
                 int n = 0;
                 foreach (ModRow r in rows)
                 {
@@ -647,9 +704,23 @@ public partial class GameViewModel : ObservableObject
         List<string> updated = new(), failed = new();
         List<BrowserStepRequired> steps = new();
 
+        List<ModRow> steamRows = _workshop == null ? new() : rows.Where(r => r.Mod.Source == ModSource.Steam && !String.IsNullOrEmpty(r.Mod.RemoteId)).ToList();
+        rows = rows.Except(steamRows).ToList();
+
         await Main.RunAsync(
             () =>
             {
+                if (steamRows.Count > 0)
+                {
+                    try
+                    {
+                        WorkshopInstaller.Result w = _workshop!.Install(steamRows.Select(r => r.Mod.RemoteId!), force: true, Main.SetStatus);
+                        updated.AddRange(w.Installed.Select(m => "[Steam] " + m.Name + " " + m.Version));
+                        failed.AddRange(w.Failed.Values);
+                    }
+                    catch (Exception ex) { failed.Add("Steam Workshop: " + ex.Message); }
+                }
+
                 foreach (ModRow r in rows)
                 {
                     try
@@ -669,7 +740,7 @@ public partial class GameViewModel : ObservableObject
             async () =>
             {
                 foreach (BrowserStepRequired s in steps) BeginBrowserStep(s);
-                foreach (ModRow r in Rows.Where(r => rows.Any(x => x.Key == r.Key) && updated.Count > 0)) { r.UpdateText = ""; r.UpdateState = null; }
+                foreach (ModRow r in Rows.Where(r => (rows.Any(x => x.Key == r.Key) || steamRows.Any(x => x.Key == r.Key)) && updated.Count > 0)) { r.UpdateText = ""; r.UpdateState = null; }
                 AfterInstall();
                 await ShowInstallSummary(updated, failed, steps);
             });
@@ -756,6 +827,98 @@ public partial class GameViewModel : ObservableObject
         Main.Log.Add("INFO", "Exported " + Instance.Name + " (" + _mods.ActiveProfile + ") to " + file);
     }
 
+    // ---------------- RimWorld ----------------
+
+    [RelayCommand]
+    private async Task SetModList()
+    {
+        if (_rw == null) return;
+        SortResult? sorted = null;
+        await Main.RunAsync(() => sorted = _rw.ApplyModList(Main.Log), async () =>
+        {
+            Main.StatusText = "RimWorld mod list set: " + sorted!.Order.Count + " active mod(s) for profile \"" + _mods.ActiveProfile + "\".";
+            await Main.Dialogs.ShowText("RimWorld mod list",
+                "Active mods, in load order (" + sorted.Order.Count + "):\n\n" +
+                String.Join("\n", sorted.Order.Select((m, i) => (i + 1).ToString().PadLeft(4) + ". " + m.Name + "  (" + m.PackageId + ")")) +
+                (sorted.Notes.Count > 0 ? "\n\nNotes:\n" + String.Join("\n", sorted.Notes) : "") +
+                "\n\nThe previous list is kept as ModsConfig.xml.ghud-prev next to RimWorld's ModsConfig.xml.");
+        });
+    }
+
+    [RelayCommand]
+    private async Task SessionReport()
+    {
+        if (_rw == null) return;
+        RimWorldGame.SessionReport? s = null;
+        await Main.RunAsync(() => s = _rw.ReadSession(), () => Main.Dialogs.ShowText("RimWorld session", s!.Summary));
+    }
+
+    [RelayCommand]
+    private async Task CopyHelpBundle()
+    {
+        if (_rw == null) return;
+        RimWorldGame.SessionReport? s = null;
+        await Main.RunAsync(() => s = _rw.ReadSession(), async () =>
+        {
+            await Main.Dialogs.SetClipboardText(s!.Bundle);
+            Main.StatusText = "Help bundle copied (" + s.Bundle.Length / 1024 + " KB, account names removed): paste it to an AI helper.";
+        });
+    }
+
+    [RelayCommand]
+    private async Task SaveHelpBundle()
+    {
+        if (_rw == null) return;
+        string? file = await Main.Dialogs.SaveFile("Save help bundle", "RimWorld help bundle " + DateTime.Now.ToString("yyyy-MM-dd") + ".txt", "Text", "*.txt");
+        if (file == null) return;
+        RimWorldGame.SessionReport? s = null;
+        await Main.RunAsync(() => { s = _rw.ReadSession(); File.WriteAllText(file, s.Bundle); }, () =>
+        {
+            Main.StatusText = "Help bundle saved to " + file;
+            return Task.CompletedTask;
+        });
+    }
+
+    [RelayCommand]
+    private async Task ChooseRimWorldData()
+    {
+        if (_rw == null) return;
+        string? folder = await Main.Dialogs.PickFolder("RimWorld's user-data folder (it holds Config\\ModsConfig.xml and Player.log)", _rw.UserData);
+        if (folder == null) return;
+        Instance.Settings[RimWorldGame.UserDataSetting] = folder;
+        Main.Store.Save(Instance);
+        OnPropertyChanged(nameof(RimWorldDataText));
+    }
+
+    [RelayCommand]
+    private async Task CleanSteamCache()
+    {
+        if (_workshop == null) return;
+        string? text = await Main.Dialogs.Prompt("Delete SteamCMD's cached Workshop downloads not used for how many days?\n" +
+            "Your staged mods keep their own copy; a removed one is just downloaded in full at its next update.", "SteamCMD cache", "30");
+        if (text == null) return;
+        if (!int.TryParse(text.Trim(), out int days) || days < 0) { await Main.Dialogs.Info("Enter a number of days."); return; }
+
+        (int Count, long Bytes) preview = default, total = default;
+        await Main.RunAsync(() => { preview = _workshop.CleanCache(days, dryRun: true); total = _workshop.CacheSize(); }, async () =>
+        {
+            if (preview.Count == 0)
+            {
+                await Main.Dialogs.Info("Nothing to delete. The SteamCMD cache holds " + total.Count + " item(s), " + Sizes.Format(total.Bytes) + ".");
+                return;
+            }
+            if (!await Main.Dialogs.Confirm("Delete " + preview.Count + " cached item(s), " + Sizes.Format(preview.Bytes) + " of " +
+                                            Sizes.Format(total.Bytes) + "?", "SteamCMD cache"))
+                return;
+            (int Count, long Bytes) done = default;
+            await Main.RunAsync(() => done = _workshop.CleanCache(days, dryRun: false), () =>
+            {
+                Main.StatusText = "SteamCMD cache: " + done.Count + " item(s) deleted, " + Sizes.Format(done.Bytes) + " freed.";
+                return Task.CompletedTask;
+            });
+        });
+    }
+
     // ---------------- Deploying ----------------
 
     [RelayCommand]
@@ -763,15 +926,30 @@ public partial class GameViewModel : ObservableObject
     {
         List<ProfileEntry> order = _mods.Order.Select(e => new ProfileEntry(e.Key, e.Enabled)).ToList();
         DeployResult? r = null;
+        SortResult? sorted = null;
+        string? modListError = null;
         await Main.RunAsync(
-            () => r = _deployer.Deploy(order, Main.SetStatus),
             () =>
+            {
+                r = _deployer.Deploy(order, Main.SetStatus);
+                if (_rw != null && _rw.WriteModListOnDeploy)
+                {
+                    Main.SetStatus("Setting RimWorld's mod list...");
+                    try { sorted = _rw.ApplyModList(Main.Log); }
+                    catch (Exception ex) { modListError = ex.Message; Main.Log.Add("ERROR", "RimWorld mod list: " + ex.Message); }
+                }
+            },
+            async () =>
             {
                 NeedsDeploy = false;
                 UpdateDeployedText();
                 Main.StatusText = "Deployed: " + r!.Placed + " file(s) placed, " + r.Removed + " removed, " + r.Unchanged + " unchanged" +
-                                  (r.Conflicts.Count > 0 ? ", " + r.Conflicts.Count + " conflict(s)." : ".");
-                return Task.CompletedTask;
+                                  (r.Conflicts.Count > 0 ? ", " + r.Conflicts.Count + " conflict(s)" : "") +
+                                  (sorted != null ? "; RimWorld mod list set (" + sorted.Order.Count + " active)." : ".");
+                if (modListError != null)
+                    await Main.Dialogs.Warning("The mods were deployed, but RimWorld's mod list wasn't set:\n\n" + modListError);
+                else if (sorted is { Notes.Count: > 0 })
+                    await Main.Dialogs.Info("RimWorld's mod list was set. Notes from sorting:\n\n" + String.Join("\n", sorted.Notes));
             });
     }
 

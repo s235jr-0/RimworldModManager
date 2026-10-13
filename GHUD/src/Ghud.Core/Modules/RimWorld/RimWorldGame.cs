@@ -22,8 +22,10 @@ public sealed class RimWorldGame
     public string ModsConfig => RimWorldMods.ModsConfigPath(UserData);
     public string? Version => RimWorldMods.GameVersion(_instance.GameFolder);
 
-    // On by default: Deploy also sets RimWorld's active mod list.
-    public bool WriteModListOnDeploy => _instance.Setting(WriteModListSetting) != "false";
+    // Opt-in: Deploy also sets RimWorld's active mod list. Off by default so
+    // a load order kept with another tool (RimSort, RimPy) is never re-sorted
+    // unless the user asks for it.
+    public bool WriteModListOnDeploy => _instance.Setting(WriteModListSetting) == "true";
 
     // Core and the expansions installed with the game (Data\<name>\About).
     public List<RimWorldModInfo> Official()
@@ -108,6 +110,29 @@ public sealed class RimWorldGame
         log.Add("SUCCESS", "RimWorld mod list set (" + _instance.Name + ", profile \"" + _mods.ActiveProfile + "\"): " + r.Order.Count + " active mod(s)." +
                            (r.Notes.Count > 0 ? " Notes: " + String.Join(" ", r.Notes) : ""));
         return r;
+    }
+
+    // Mods adopted before Workshop detection existed are tagged Manual. Tags
+    // the Workshop ones as Steam (only GHUD's records change). Returns how many.
+    public int DetectWorkshopOrigins(IGameModule module)
+    {
+        int found = 0;
+        foreach (StagedMod m in _mods.Catalog.Where(m => m.Source == ModSource.Manual && String.IsNullOrEmpty(m.RemoteId)))
+        {
+            string root = Path.Combine(_instance.StagingRoot, m.Key);
+            if (!Directory.Exists(root)) continue;
+            foreach (string dir in Directory.GetDirectories(root))
+            {
+                if (module.OriginOf(dir) is not { } origin) continue;
+                m.Source = origin.Source;
+                m.RemoteId = origin.RemoteId;
+                m.Url ??= origin.Url;
+                found++;
+                break;
+            }
+        }
+        if (found > 0) _mods.Save();
+        return found;
     }
 
     // ---------------- Session report / help bundle ----------------

@@ -22,6 +22,9 @@ public interface IDialogs
     // One line of text; null if cancelled.
     Task<string?> Prompt(string message, string title, string initial);
 
+    // Long text in a scrollable, copyable box.
+    Task ShowText(string title, string text);
+
     // Pick one item from a list; -1 if cancelled.
     Task<int> Choose(string message, string title, IReadOnlyList<string> options);
 
@@ -61,6 +64,36 @@ public sealed class Dialogs : IDialogs
 
     public Task<bool> Confirm(string message, string title, bool defaultYes = false) =>
         Show(title, message, null, new[] { ("Yes", true), ("No", false) }, defaultYes ? 0 : 1);
+
+    public async Task ShowText(string title, string text)
+    {
+        Window dialog = new()
+        {
+            Title = title,
+            Width = 860,
+            Height = 600,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        TextBox box = new()
+        {
+            Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
+            FontFamily = new FontFamily("Consolas, Menlo, DejaVu Sans Mono, monospace"), FontSize = 12,
+        };
+        Button copy = new() { Content = "Copy", MinWidth = 80 };
+        Button close = new() { Content = "Close", MinWidth = 80, IsDefault = true, IsCancel = true };
+        copy.Click += async (_, _) => { if (dialog.Clipboard is { } c) await c.SetTextAsync(text); };
+        close.Click += (_, _) => dialog.Close();
+
+        DockPanel panel = new() { Margin = new Avalonia.Thickness(14) };
+        StackPanel buttons = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Margin = new Avalonia.Thickness(0, 10, 0, 0), Children = { copy, close } };
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        panel.Children.Add(buttons);
+        panel.Children.Add(box);
+        dialog.Content = panel;
+        dialog.Opened += (_, _) => ThemeManager.StyleTitleBar(dialog);
+        await dialog.ShowDialog(_owner);
+    }
 
     public async Task<List<int>?> ChooseMany(string message, string title, IReadOnlyList<string> options)
     {

@@ -38,6 +38,23 @@
       </StackPanel>
     </Grid>
 
+    <!-- RimWorld only -->
+    <Border DockPanel.Dock="Top" IsVisible="{Binding IsRimWorld}" Margin="0,8,0,0" Padding="10,6" CornerRadius="6"
+            BorderThickness="1" BorderBrush="{DynamicResource Theme.Border}">
+      <WrapPanel ItemSpacing="8" LineSpacing="6">
+        <TextBlock Text="RimWorld" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <CheckBox Content="Deploy also sets RimWorld's mod list" IsChecked="{Binding WriteModList}"
+                  ToolTip.Tip="Off by default. When on, Deploy writes this profile's active mods, sorted by each mod's own About.xml rules, into RimWorld's ModsConfig.xml (backed up first). Leave it off if RimSort or RimPy manage your load order." />
+        <Button Content="Set mod list now" Command="{Binding SetModListCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+        <Button Content="Session report" Command="{Binding SessionReportCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+        <Button Content="Copy help bundle" Command="{Binding CopyHelpBundleCommand}" IsEnabled="{Binding Main.IsNotBusy}"
+                ToolTip.Tip="Mod list, metadata and Player.log for an AI helper, with your account name removed." />
+        <Button Content="Save help bundle..." Command="{Binding SaveHelpBundleCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+        <Button Content="SteamCMD cache..." Command="{Binding CleanSteamCacheCommand}" IsEnabled="{Binding Main.IsNotBusy}" />
+        <Button Content="Data folder..." Command="{Binding ChooseRimWorldDataCommand}" ToolTip.Tip="{Binding RimWorldDataText}" />
+      </WrapPanel>
+    </Border>
+
     <!-- Downloads to finish in the browser -->
     <Border DockPanel.Dock="Bottom" IsVisible="{Binding HasPending}" Padding="10,8" CornerRadius="6" Margin="0,8,0,0"
             BorderThickness="1" BorderBrush="{DynamicResource Theme.StatusWorking}">
@@ -58,7 +75,7 @@
     <!-- Install box -->
     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
       <TextBox Text="{Binding LinksInput}" AcceptsReturn="True" Height="64" AutomationProperties.Name="Links"
-               PlaceholderText="Paste links, one per line: GitHub, GitLab / GitGud, Nexus, MEGA, MediaFire, Google Drive, Dropbox, direct files..."
+               PlaceholderText="{Binding LinksHint}"
                FontFamily="Consolas, Menlo, DejaVu Sans Mono, monospace" />
       <StackPanel Grid.Column="1" Spacing="6">
         <StackPanel Orientation="Horizontal" Spacing="6">
